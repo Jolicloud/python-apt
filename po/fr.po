@@ -1,0 +1,449 @@
+# french translation of python-apt
+# Copyright (C) 2007 Hugues NAULET <hnaulet@gmail.com>
+# This file is distributed under the same license as the python-apt package.
+# Jean Privat <privat@lirmm.fr>, 2005.
+# Vincent Carriere <carriere_vincent@yahoo.fr>, 2005
+#
+msgid ""
+msgstr ""
+"Project-Id-Version:  python-apt 0.7.2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-08-21 15:34+0200\n"
+"PO-Revision-Date: 2007-06-25 12:12+0100\n"
+"Last-Translator: Hugues NAULET <hnaulet@gmail.com>\n"
+"Language-Team: French <debian-l10n-french@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1\n"
+
+#. ChangelogURI
+#: ../data/templates/Ubuntu.info.in.h:4
+#, no-c-format
+msgid "http://changelogs.ubuntu.com/changelogs/pool/%s/%s/%s/%s_%s/changelog"
+msgstr "http://changelogs.ubuntu.com/changelogs/pool/%s/%s/%s/%s_%s/changelog"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:13
+msgid "Ubuntu 9.10 'Karmic Koala'"
+msgstr "Ubuntu 9.10 « Karmic Koala »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:31
+msgid "Cdrom with Ubuntu 9.10 'Karmic Koala'"
+msgstr "CD-ROM contenant Ubuntu 9.10 « Karmic Koala »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:74
+msgid "Ubuntu 9.04 'Jaunty Jackalope'"
+msgstr "Ubuntu 9.04 « Jaunty Jackalope »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:92
+msgid "Cdrom with Ubuntu 9.04 'Jaunty Jackalope'"
+msgstr "CD-ROM contenant Ubuntu 9.04 « Jaunty Jackalope »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:135
+msgid "Ubuntu 8.10 'Intrepid Ibex'"
+msgstr "Ubuntu 8.10 « Intrepid Ibex »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:153
+msgid "Cdrom with Ubuntu 8.10 'Intrepid Ibex'"
+msgstr "CD-ROM contenant Ubuntu 8.10 « Intrepid Ibex »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:197
+msgid "Ubuntu 8.04 'Hardy Heron'"
+msgstr "Ubuntu 8.04 « Hardy Heron »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:215
+msgid "Cdrom with Ubuntu 8.04 'Hardy Heron'"
+msgstr "CD-ROM contenant Ubuntu 8.04 « Hardy Heron »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:252
+msgid "Ubuntu 7.10 'Gutsy Gibbon'"
+msgstr "Ubuntu 7.10 « Gutsy Gibbon »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:270
+msgid "Cdrom with Ubuntu 7.10 'Gutsy Gibbon'"
+msgstr "CD-ROM contenant Ubuntu 7.10 « Gutsy Gibbon »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:305
+msgid "Ubuntu 7.04 'Feisty Fawn'"
+msgstr "Ubuntu 7.04 « Feisty Fawn »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:323
+msgid "Cdrom with Ubuntu 7.04 'Feisty Fawn'"
+msgstr "CD-ROM contenant Ubuntu 7.04 « Feisty Fawn »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:357
+msgid "Ubuntu 6.10 'Edgy Eft'"
+msgstr "Ubuntu 6.10 « Edgy Eft »"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:362
+msgid "Community-maintained"
+msgstr "Maintenu par la communauté"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:368
+msgid "Restricted software"
+msgstr "Logiciel non libre"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:375
+msgid "Cdrom with Ubuntu 6.10 'Edgy Eft'"
+msgstr "CD-ROM contenant Ubuntu 6.10 « Edgy Eft »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:409
+msgid "Ubuntu 6.06 LTS 'Dapper Drake'"
+msgstr "Ubuntu 6.06 LTS « Dapper Drake »"
+
+#. CompDescriptionLong
+#: ../data/templates/Ubuntu.info.in:412
+msgid "Canonical-supported Open Source software"
+msgstr "Logiciel libre maintenu par Canonical"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:414
+msgid "Community-maintained (universe)"
+msgstr "Maintenu par la communauté (universe)"
+
+#. CompDescriptionLong
+#: ../data/templates/Ubuntu.info.in:415
+msgid "Community-maintained Open Source software"
+msgstr "Logiciel libre maintenu par la communauté"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:417
+msgid "Non-free drivers"
+msgstr "Pilotes non libres"
+
+#. CompDescriptionLong
+#: ../data/templates/Ubuntu.info.in:418
+msgid "Proprietary drivers for devices"
+msgstr "Pilotes propriétaires de périphériques"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:420
+msgid "Restricted software (Multiverse)"
+msgstr "Logiciel non libre (Multiverse)"
+
+#. CompDescriptionLong
+#: ../data/templates/Ubuntu.info.in:421
+msgid "Software restricted by copyright or legal issues"
+msgstr "Logiciel soumis au droit d'auteur ou à des restrictions légales"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:427
+msgid "Cdrom with Ubuntu 6.06 LTS 'Dapper Drake'"
+msgstr "CD-ROM contenant Ubuntu 6.06 LTS « Dapper Drake »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:439
+msgid "Important security updates"
+msgstr "Mises à jour de sécurité"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:444
+msgid "Recommended updates"
+msgstr "Mises à jour recommandées"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:449
+msgid "Pre-released updates"
+msgstr "Mises à jour suggérées"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:454
+msgid "Unsupported updates"
+msgstr "Mises à jour non gérées"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:461
+msgid "Ubuntu 5.10 'Breezy Badger'"
+msgstr "Ubuntu 5.10 « Breezy Badger »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:475
+msgid "Cdrom with Ubuntu 5.10 'Breezy Badger'"
+msgstr "CD-ROM contenant Ubuntu 5.10 « Breezy Badger »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:487
+msgid "Ubuntu 5.10 Security Updates"
+msgstr "Mises à jour de sécurité pour Ubuntu 5.10"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:492
+msgid "Ubuntu 5.10 Updates"
+msgstr "Mises à jour pour Ubuntu 5.10"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:497
+msgid "Ubuntu 5.10 Backports"
+msgstr "« Backports » pour Ubuntu 5.10"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:504
+msgid "Ubuntu 5.04 'Hoary Hedgehog'"
+msgstr "Ubuntu 5.04 « Hoary Hedgehog »"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:518
+msgid "Cdrom with Ubuntu 5.04 'Hoary Hedgehog'"
+msgstr "CD-ROM contenant Ubuntu 5.04 « Hoary Hedgehog »"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:521 ../data/templates/Debian.info.in:148
+msgid "Officially supported"
+msgstr "Supporté officiellement"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:530
+msgid "Ubuntu 5.04 Security Updates"
+msgstr "Mises à jour de sécurité pour Ubuntu 5.04"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:535
+msgid "Ubuntu 5.04 Updates"
+msgstr "Mises à jour pour Ubuntu 5.04"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:540
+msgid "Ubuntu 5.04 Backports"
+msgstr "« Backports » pour Ubuntu 5.04"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:546
+msgid "Ubuntu 4.10 'Warty Warthog'"
+msgstr "Ubuntu 4.10 « Warty Warthog »"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:552
+msgid "Community-maintained (Universe)"
+msgstr "Maintenu par la communauté (Universe)"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:554
+msgid "Non-free (Multiverse)"
+msgstr "Non libre (Multiverse)"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:560
+msgid "Cdrom with Ubuntu 4.10 'Warty Warthog'"
+msgstr "CD-ROM contenant Ubuntu 4.10 « Warty Warthog »"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:563
+msgid "No longer officially supported"
+msgstr "Support officiel terminé"
+
+#. CompDescription
+#: ../data/templates/Ubuntu.info.in:565
+msgid "Restricted copyright"
+msgstr "Copyright restreint"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:572
+msgid "Ubuntu 4.10 Security Updates"
+msgstr "Mises à jour de sécurité pour Ubuntu 4.10"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:577
+msgid "Ubuntu 4.10 Updates"
+msgstr "Mises à jour pour Ubuntu 4.10"
+
+#. Description
+#: ../data/templates/Ubuntu.info.in:582
+msgid "Ubuntu 4.10 Backports"
+msgstr "« Backports » pour Ubuntu 4.10"
+
+#. ChangelogURI
+#: ../data/templates/Debian.info.in.h:4
+#, no-c-format
+msgid "http://packages.debian.org/changelogs/pool/%s/%s/%s/%s_%s/changelog"
+msgstr "http://packages.debian.org/changelogs/pool/%s/%s/%s/%s_%s/changelog"
+
+#. Description
+#: ../data/templates/Debian.info.in:8
+msgid "Debian 6.0 'Squeeze' "
+msgstr "Debian 6.0 « Squeeze »"
+
+#. Description
+#: ../data/templates/Debian.info.in:33
+msgid "Debian 5.0 'Lenny' "
+msgstr "Debian 5.0 « Lenny »"
+
+#. Description
+#: ../data/templates/Debian.info.in:58
+msgid "Debian 4.0 'Etch'"
+msgstr "Debian 4.0 « Etch »"
+
+#. Description
+#: ../data/templates/Debian.info.in:83
+msgid "Debian 3.1 'Sarge'"
+msgstr "Debian 3.1 « Sarge »"
+
+#. Description
+#: ../data/templates/Debian.info.in:94
+msgid "Proposed updates"
+msgstr "Mises à jour suggérées"
+
+#. Description
+#: ../data/templates/Debian.info.in:101
+msgid "Security updates"
+msgstr "Mises à jour de sécurité"
+
+#. Description
+#: ../data/templates/Debian.info.in:108
+msgid "Debian current stable release"
+msgstr "Debian stable actuelle"
+
+#. Description
+#: ../data/templates/Debian.info.in:121
+msgid "Debian testing"
+msgstr "Debian « Lenny » (testing)"
+
+#. Description
+#: ../data/templates/Debian.info.in:146
+msgid "Debian 'Sid' (unstable)"
+msgstr "Debian « Sid » (unstable)"
+
+#. CompDescription
+#: ../data/templates/Debian.info.in:150
+msgid "DFSG-compatible Software with Non-Free Dependencies"
+msgstr ""
+"Logiciel libre (selon les lignes directrices du projet Debian) dont les "
+"dépendances ne sont pas libres"
+
+#. CompDescription
+#: ../data/templates/Debian.info.in:152
+msgid "Non-DFSG-compatible Software"
+msgstr "Logiciel non libre (selon les lignes directrices du projet Debian)"
+
+#. TRANSLATORS: %s is a country
+#: ../aptsources/distro.py:208 ../aptsources/distro.py:423
+#, python-format
+msgid "Server for %s"
+msgstr "Serveur pour %s"
+
+#. More than one server is used. Since we don't handle this case
+#. in the user interface we set "custom servers" to true and
+#. append a list of all used servers
+#: ../aptsources/distro.py:226 ../aptsources/distro.py:232
+#: ../aptsources/distro.py:248
+msgid "Main server"
+msgstr "Serveur principal"
+
+#: ../aptsources/distro.py:252
+msgid "Custom servers"
+msgstr "Serveurs personnalisés"
+
+#: ../apt/progress/gtk2.py:246
+#, python-format
+msgid "Downloading file %(current)li of %(total)li with %(speed)s/s"
+msgstr "Téléchargement du fichier %(current)li sur %(total)li à %(speed)s/s"
+
+#: ../apt/progress/gtk2.py:252
+#, python-format
+msgid "Downloading file %(current)li of %(total)li"
+msgstr "Téléchargement du fichier %(current)li sur %(total)li"
+
+#. Setup some child widgets
+#: ../apt/progress/gtk2.py:272
+msgid "Details"
+msgstr "Détails"
+
+#: ../apt/progress/gtk2.py:354
+#, fuzzy
+msgid "Starting..."
+msgstr "Paramètres"
+
+#: ../apt/progress/gtk2.py:360
+msgid "Complete"
+msgstr ""
+
+#: ../apt/package.py:315
+#, python-format
+msgid "Invalid unicode in description for '%s' (%s). Please report."
+msgstr ""
+
+#: ../apt/package.py:878 ../apt/package.py:982
+msgid "The list of changes is not available"
+msgstr "La liste des modifications n'est pas disponible"
+
+#: ../apt/package.py:986
+#, python-format
+msgid ""
+"The list of changes is not available yet.\n"
+"\n"
+"Please use http://launchpad.net/ubuntu/+source/%s/%s/+changelog\n"
+"until the changes become available or try again later."
+msgstr ""
+
+#: ../apt/package.py:992
+msgid ""
+"Failed to download the list of changes. \n"
+"Please check your Internet connection."
+msgstr ""
+"Échec lors du téléchargement de la liste des modifications. \n"
+"Veuillez vérifier votre connexion Internet."
+
+#: ../apt/debfile.py:56
+#, python-format
+msgid "This is not a valid DEB archive, missing '%s' member"
+msgstr ""
+
+#: ../apt/debfile.py:81
+#, python-format
+msgid "List of files for '%s' could not be read"
+msgstr ""
+
+#: ../apt/debfile.py:149
+#, python-format
+msgid "Dependency is not satisfiable: %s\n"
+msgstr ""
+
+#: ../apt/debfile.py:173
+#, python-format
+msgid "Conflicts with the installed package '%s'"
+msgstr ""
+
+#: ../apt/debfile.py:319
+#, python-format
+msgid "Wrong architecture '%s'"
+msgstr ""
+
+#. the deb is older than the installed
+#: ../apt/debfile.py:325
+msgid "A later version is already installed"
+msgstr ""
+
+#: ../apt/debfile.py:345
+msgid "Failed to satisfy all dependencies (broken cache)"
+msgstr ""
+
+#: ../apt/debfile.py:376
+#, fuzzy, python-format
+msgid "Cannot install '%s'"
+msgstr "Impossible d'installer « %s »"
+
+#: ../apt/debfile.py:484
+#, python-format
+msgid "Install Build-Dependencies for source package '%s' that builds %s\n"
+msgstr ""
+
+#: ../apt/debfile.py:494
+#, fuzzy
+msgid "An essential package would be removed"
+msgstr "Un paquet essentiel devrait être enlevé"

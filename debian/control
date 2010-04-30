@@ -1,0 +1,57 @@
+Source: python-apt
+Section: python
+Priority: optional
+Maintainer: Ubuntu Core Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: APT Development Team <deity@lists.debian.org>
+Uploaders: Michael Vogt <mvo@debian.org>, Julian Andres Klode <jak@debian.org>
+Standards-Version: 3.8.3
+XS-Python-Version: all
+Build-Depends: apt-utils,
+               debhelper (>= 7.3.5),
+               libapt-pkg-dev (>= 0.7.23),
+               python-all-dbg,
+               python-all-dev,
+	       python2.4-dev,
+	       python2.4-dbg,
+               python-central (>= 0.5),
+               python-debian,
+               python-distutils-extra (>= 1.9.0),
+               python-gtk2 [!kfreebsd-amd64 !kfreebsd-i386],
+               python-sphinx (>= 0.5),
+               python-vte [!kfreebsd-amd64 !kfreebsd-i386]
+Vcs-Bzr: http://bzr.debian.org/apt/python-apt/debian-sid
+Vcs-Browser: http://bzr.debian.org/loggerhead/apt/python-apt/debian-sid/changes
+
+Package: python-apt
+Architecture: any
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, lsb-release
+Recommends: iso-codes, libjs-jquery
+Breaks: debdelta (<< 0.28~), packagekit-backend-apt (<= 0.4.8-0ubuntu4)
+Provides: ${python:Provides}
+Suggests: python-apt-dbg, python-gtk2, python-vte
+XB-Python-Version: ${python:Versions}
+Description: Python interface to libapt-pkg
+ The apt_pkg Python interface will provide full access to the internal
+ libapt-pkg structures allowing Python programs to easily perform a
+ variety of functions, such as:
+ .
+  - Access to the APT configuration system
+  - Access to the APT package information database
+  - Parsing of Debian package control files, and other files with a
+    similar structure
+ .
+ The included 'aptsources' Python interface provides an abstraction of
+ the sources.list configuration on the repository and the distro level.
+
+Package: python-apt-dbg
+Priority: extra
+Architecture: any
+Section: debug
+Depends: python-dbg, python-apt (= ${binary:Version}), ${shlibs:Depends},
+         ${misc:Depends}
+Description: Python interface to libapt-pkg (debug extension)
+ The apt_pkg Python interface will provide full access to the internal
+ libapt-pkg structures allowing Python programs to easily perform a
+ variety of functions.
+ .
+ This package contains the extension built for the Python debug interpreter.

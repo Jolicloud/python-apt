@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+export DH_PYCENTRAL=include-links
+export DEBVER=$(shell dpkg-parsechangelog | sed -n -e 's/^Version: //p')
+export CFLAGS=-Wno-write-strings
+
+%:
+	dh --with python-central $@
+
+override_dh_installdocs:
+	dh_installdocs
+	ln -sf ../../../../javascript/jquery/jquery.js \
+	       debian/python-apt/usr/share/doc/python-apt/html/_static/jquery.js
+	rm -rf debian/python-apt-dbg/usr/share/doc/python-apt-dbg
+	ln -s python-apt debian/python-apt-dbg/usr/share/doc/python-apt-dbg
+
+override_dh_strip:
+	dh_strip --dbg-package=python-apt-dbg
+
+override_dh_compress:
+	dh_compress -X.js -X_static/* -X _sources/* -X_sources/*/* -X.inv

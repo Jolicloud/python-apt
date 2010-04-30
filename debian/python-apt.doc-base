@@ -1,0 +1,11 @@
+Document: python-apt-api-reference
+Title: Python APT: API reference manual
+Abstract: API reference manual for Python bindings to libapt-pkg
+Section: Programming/Python
+
+Format: HTML
+Index: /usr/share/doc/python-apt/html/index.html
+Files: /usr/share/doc/python-apt/html/*
+
+Format: Text
+Files: /usr/share/doc/python-apt/text/*
