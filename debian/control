@@ -8,7 +8,7 @@ Standards-Version: 3.8.3
 XS-Python-Version: all
 Build-Depends: apt-utils,
                debhelper (>= 7.3.5),
-               libapt-pkg-dev (>= 0.7.23),
+               libapt-pkg-dev (>= 0.7.20),
                python-all-dbg,
                python-all-dev,
 	       python2.4-dev,

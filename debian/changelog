@@ -1,3 +1,9 @@
+python-apt (0.7.13.2jolicloud5) robby; urgency=low
+
+  * Backporting for the new packagekit based jolicloud-daemon
+
+ -- Andrew Stormont <andy@jolicloud.org>  Tue, 04 May 2010 09:38:30 +0200
+
 python-apt (0.7.13.2ubuntu4) karmic; urgency=low
 
   * No change rebuild to fix misbuilt binaries on armel.
