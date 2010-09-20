@@ -23,10 +23,11 @@
 import glob
 
 import apt_pkg
-from apt.progress import CdromProgress
+from apt.deprecation import AttributeDeprecatedBy
+from apt.progress.base import CdromProgress
 
 
-class Cdrom(object):
+class Cdrom(apt_pkg.Cdrom):
     """Support for apt-cdrom like features.
 
     This class has several optional parameters for initialisation, which may
@@ -44,43 +45,44 @@ class Cdrom(object):
     """
 
     def __init__(self, progress=None, mountpoint=None, nomount=True):
-        self._cdrom = apt_pkg.GetCdrom()
+        apt_pkg.Cdrom.__init__(self)
         if progress is None:
             self._progress = CdromProgress()
         else:
             self._progress = progress
         # see if we have a alternative mountpoint
         if mountpoint is not None:
-            apt_pkg.Config.Set("Acquire::cdrom::mount", mountpoint)
+            apt_pkg.config.set("Acquire::cdrom::mount", mountpoint)
         # do not mess with mount points by default
         if nomount:
-            apt_pkg.Config.Set("APT::CDROM::NoMount", "true")
+            apt_pkg.config.set("APT::CDROM::NoMount", "true")
         else:
-            apt_pkg.Config.Set("APT::CDROM::NoMount", "false")
+            apt_pkg.config.set("APT::CDROM::NoMount", "false")
 
-    def add(self):
+    def add(self, progress=None):
         """Add cdrom to the sources.list."""
-        return self._cdrom.Add(self._progress)
+        return apt_pkg.Cdrom.add(self, progress or self._progress)
 
-    def ident(self):
+    def ident(self, progress=None):
         """Identify the cdrom."""
-        (res, ident) = self._cdrom.Ident(self._progress)
-        if res:
-            return ident
+        return apt_pkg.Cdrom.ident(self, progress or self._progress)
 
     @property
-    def inSourcesList(self):
+    def in_sources_list(self):
         """Check if the cdrom is already in the current sources.list."""
         cd_id = self.ident()
         if cd_id is None:
             # FIXME: throw exception instead
             return False
         # Get a list of files
-        src = glob.glob(apt_pkg.Config.FindDir("Dir::Etc::sourceparts") + '*')
-        src.append(apt_pkg.Config.FindFile("Dir::Etc::sourcelist"))
+        src = glob.glob(apt_pkg.config.find_dir("Dir::Etc::sourceparts") + '*')
+        src.append(apt_pkg.config.find_file("Dir::Etc::sourcelist"))
         # Check each file
         for fname in src:
             for line in open(fname):
                 if not line.lstrip().startswith("#") and cd_id in line:
                     return True
         return False
+
+    if apt_pkg._COMPAT_0_7:
+        inSourcesList = AttributeDeprecatedBy('in_sources_list')

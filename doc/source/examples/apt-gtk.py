@@ -17,10 +17,10 @@ def main():
     progress.show()
     win.show()
     cache = apt.cache.Cache(progress.open)
-    if cache["xterm"].isInstalled:
-        cache["xterm"].markDelete()
+    if cache["xterm"].is_installed:
+        cache["xterm"].mark_delete()
     else:
-        cache["xterm"].markInstall()
+        cache["xterm"].mark_install()
     progress.show_terminal(expanded=True)
     cache.commit(progress.fetch, progress.install)
     gtk.main()

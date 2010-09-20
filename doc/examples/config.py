@@ -21,7 +21,7 @@ import posixpath
 # configuration object apt_pkg.Config which is used interally by apt-pkg
 # routines to control unusual situations. I recommend using the sytem global
 # whenever possible..
-Cnf = apt_pkg.newConfiguration()
+Cnf = apt_pkg.Configuration()
 
 print "Command line is", sys.argv
 

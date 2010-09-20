@@ -10,7 +10,7 @@ from progress import TextCdromProgress
 # init
 apt_pkg.init()
 
-cdrom = apt_pkg.GetCdrom()
+cdrom = apt_pkg.Cdrom()
 print cdrom
 
 progress = TextCdromProgress()

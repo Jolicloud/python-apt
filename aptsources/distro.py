@@ -38,7 +38,7 @@ class NoDistroTemplateException(Exception):
     pass
 
 
-class Distribution:
+class Distribution(object):
 
     def __init__(self, id, codename, description, release):
         """ Container for distribution specific informations """
@@ -438,6 +438,24 @@ class UbuntuDistribution(Distribution):
             self, mirror_template="http://%s.archive.ubuntu.com/ubuntu/")
 
 
+def _lsb_release():
+    """Call lsb_release --idrc and return a mapping."""
+    from subprocess import Popen, PIPE
+    import errno
+    result = {'Codename': 'sid', 'Distributor ID': 'Debian',
+              'Description': 'Debian GNU/Linux unstable (sid)',
+              'Release': 'unstable'}
+    try:
+        out = Popen(['lsb_release', '-idrc'], stdout=PIPE).communicate()[0]
+        # Convert to unicode string, needed for Python 3.1
+        out = out.decode("utf-8")
+        result.update(l.split(":\t") for l in out.split("\n") if ':\t' in l)
+    except OSError, exc:
+        if exc.errno != errno.ENOENT:
+            print 'WARNING: lsb_release failed, using defaults:', exc
+    return result
+
+
 def get_distro(id=None, codename=None, description=None, release=None):
     """
     Check the currently used distribution and return the corresponding
@@ -448,12 +466,11 @@ def get_distro(id=None, codename=None, description=None, release=None):
     """
     # make testing easier
     if not (id and codename and description and release):
-        lsb_info = []
-        for lsb_option in ["-i", "-c", "-d", "-r"]:
-            pipe = os.popen("lsb_release %s -s" % lsb_option)
-            lsb_info.append(pipe.read().strip())
-            del pipe
-        (id, codename, description, release) = lsb_info
+        result = _lsb_release()
+        id = result['Distributor ID']
+        codename = result['Codename']
+        description = result['Description']
+        release = result['Release']
     if id == "Ubuntu":
         return UbuntuDistribution(id, codename, description, release)
     elif id == "Debian":

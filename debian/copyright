@@ -1,8 +1,16 @@
-Format-Specification: http://wiki.debian.org/Proposals/CopyrightFormat?action=recall&rev=443
+Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?rev=59
 
 Files: *
 Copyright: © 2004-2009 Canonical Ltd.
+           © 2009 Julian Andres Klode <jak@debian.org>
 License: GPL-2+
+
+Files: tests/test_all.py, tests/test_hashes.py, utils/doclint.py
+Copyright: © 2009 Julian Andres Klode <jak@debian.org>
+License:
+ Copying and distribution of this file, with or without modification,
+ are permitted in any medium without royalty provided the copyright
+ notice and this notice are preserved.
 
 Files: aptsources/*.py
 Copyright: © 2004-2009 Canonical Ltd.

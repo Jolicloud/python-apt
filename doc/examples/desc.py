@@ -6,8 +6,8 @@ apt_pkg.init()
 
 apt_pkg.Config.Set("APT::Acquire::Translation", "de")
 
-cache = apt_pkg.GetCache()
-depcache = apt_pkg.GetDepCache(cache)
+cache = apt_pkg.Cache()
+depcache = apt_pkg.DepCache(cache)
 
 pkg = cache["gcc"]
 cand = depcache.GetCandidateVer(pkg)
@@ -18,7 +18,7 @@ print desc
 print desc.FileList
 (f, index) = desc.FileList.pop(0)
 
-records = apt_pkg.GetPkgRecords(cache)
+records = apt_pkg.PackageRecords(cache)
 records.Lookup((f, index))
 desc = records.LongDesc
 print len(desc)

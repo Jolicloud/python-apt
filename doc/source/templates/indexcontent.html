@@ -1,0 +1,50 @@
+{% extends "defindex.html" %}
+{% block body %}
+  <h1>{{ docstitle|e }}</h1>
+  <p>
+    Welcome! This is
+    {% block description %}the documentation for {{ project|e }}
+    {{ release|e }}{% if last_updated %}, last updated {{ last_updated|e }}{% endif %}{% endblock %}.
+  </p>
+
+  <p>
+   This documentation has been created using Sphinx and reStructuredText files
+   written by Julian Andres Klode &lt;jak@debian.org&gt;.
+  </p>
+
+
+
+
+  <p><strong>Parts of the documentation:</strong></p>
+  <table class="contentstable" align="center"><tr>
+    <td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("whatsnew/" + version) }}">What's new in Python APT {{ version }}?</a><br/>
+         <span class="linkdescr">or <a href="{{ pathto("whatsnew/index") }}">all "What's new" documents</a></span></span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("library/index") }}">Library Reference</a><br/>
+         <span class="linkdescr">keep this under your pillow</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("tutorials/index") }}">Tutorials</a><br/>
+         <span class="linkdescr">examples and more...</span></p>
+    </td><td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("c++/embedding") }}">Embedding</a><br/>
+         <span class="linkdescr">tutorial for C++ programmers</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("c++/api") }}">C++ API</a><br/>
+         <span class="linkdescr">reference for C++ programmers</span></p>
+    </td></tr>
+  </table>
+
+  <p><strong>Indices and tables:</strong></p>
+  <table class="contentstable" align="center"><tr>
+    <td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("modindex") }}">Global Module Index</a><br/>
+         <span class="linkdescr">quick access to all modules</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("genindex") }}">General Index</a><br/>
+         <span class="linkdescr">all functions, classes, terms</span></p>
+    </td><td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("search") }}">Search page</a><br/>
+         <span class="linkdescr">search this documentation</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("contents") }}">Complete Table of Contents</a><br/>
+         <span class="linkdescr">lists all sections and subsections</span></p>
+    </td></tr>
+  </table>
+
+{% endblock %}

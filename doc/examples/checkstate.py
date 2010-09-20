@@ -8,7 +8,7 @@
 import apt_pkg
 apt_pkg.init()
 
-cache = apt_pkg.GetCache()
+cache = apt_pkg.Cache()
 packages = cache.Packages
 
 uninstalled, updated, upgradable = {}, {}, {}

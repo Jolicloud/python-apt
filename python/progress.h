@@ -18,7 +18,7 @@
 /* PyCbObj_BEGIN_ALLOW_THREADS and PyCbObj_END_ALLOW_THREADS are sligthly
  * modified versions of Py_BEGIN_ALLOW_THREADS and Py_END_ALLOW_THREADS.
  * Instead of storing the thread state in a function-local variable these
- * use a class attribute (with the same) name, allowing blocking and 
+ * use a class attribute (with the same) name, allowing blocking and
  * unblocking from different class methods.
  * Py_BLOCK_THREADS and Py_UNBLOCK_THREADS do not define their own
  * local variable but use the one provided by PyCbObj_BEGIN_ALLOW_THREADS
@@ -62,6 +62,10 @@ struct PyOpProgress : public OpProgress, public PyCallbackObj
 
 struct PyFetchProgress : public pkgAcquireStatus, public PyCallbackObj
 {
+   protected:
+   PyObject *pyAcquire;
+   PyObject *GetDesc(pkgAcquire::ItemDesc *item);
+   public:
    enum {
       DLDone, DLQueued, DLFailed, DLHit, DLIgnored
    };
@@ -69,6 +73,12 @@ struct PyFetchProgress : public pkgAcquireStatus, public PyCallbackObj
    void UpdateStatus(pkgAcquire::ItemDesc & Itm, int status);
 
    virtual bool MediaChange(string Media, string Drive);
+
+   void setPyAcquire(PyObject *o) {
+      Py_CLEAR(pyAcquire);
+      Py_INCREF(o);
+      pyAcquire = o;
+   }
 
    /* apt stuff */
    virtual void IMSHit(pkgAcquire::ItemDesc &Itm);
@@ -79,7 +89,8 @@ struct PyFetchProgress : public pkgAcquireStatus, public PyCallbackObj
    virtual void Stop();
 
    bool Pulse(pkgAcquire * Owner);
-   PyFetchProgress() : PyCallbackObj() {};
+   PyFetchProgress() : PyCallbackObj(), pyAcquire(0) {};
+   ~PyFetchProgress()  { Py_XDECREF(pyAcquire); };
 };
 
 struct PyInstallProgress : public PyCallbackObj

@@ -15,76 +15,101 @@
 
 #include <Python.h>
 
-static PyObject *PackageIndexFileArchiveURI(PyObject *Self,PyObject *Args)
+static PyObject *IndexFileArchiveURI(PyObject *Self,PyObject *Args)
 {
    pkgIndexFile *File = GetCpp<pkgIndexFile*>(Self);
    char *path;
 
    if (PyArg_ParseTuple(Args, "s",&path) == 0)
       return 0;
-
    return HandleErrors(Safe_FromString(File->ArchiveURI(path).c_str()));
 }
 
-static PyMethodDef PackageIndexFileMethods[] =
+static PyMethodDef IndexFileMethods[] =
 {
-   {"ArchiveURI",PackageIndexFileArchiveURI,METH_VARARGS,"Returns the ArchiveURI"},
+   {"archive_uri",IndexFileArchiveURI,METH_VARARGS,"Returns the ArchiveURI"},
    {}
 };
 
-
-static PyObject *PackageIndexFileAttr(PyObject *Self,char *Name)
-{
-   pkgIndexFile *File = GetCpp<pkgIndexFile*>(Self);
-   if (strcmp("Label",Name) == 0)
-      return Safe_FromString(File->GetType()->Label);
-   else if (strcmp("Describe",Name) == 0)
-      return Safe_FromString(File->Describe().c_str());
-   else if (strcmp("Exists",Name) == 0)
-      return Py_BuildValue("i",(File->Exists()));
-   else if (strcmp("HasPackages",Name) == 0)
-      return Py_BuildValue("i",(File->HasPackages()));
-   else if (strcmp("Size",Name) == 0)
-      return Py_BuildValue("i",(File->Size()));
-   else if (strcmp("IsTrusted",Name) == 0)
-      return Py_BuildValue("i",(File->IsTrusted()));
-
-   return Py_FindMethod(PackageIndexFileMethods,Self,Name);
+#define File (GetCpp<pkgIndexFile*>(Self))
+static PyObject *IndexFileGetLabel(PyObject *Self,void*) {
+   return Safe_FromString(File->GetType()->Label);
 }
+static PyObject *IndexFileGetDescribe(PyObject *Self,void*) {
+   return Safe_FromString(File->Describe().c_str());
+}
+static PyObject *IndexFileGetExists(PyObject *Self,void*) {
+   return Py_BuildValue("i",(File->Exists()));
+}
+static PyObject *IndexFileGetHasPackages(PyObject *Self,void*) {
+   return Py_BuildValue("i",(File->HasPackages()));
+}
+static PyObject *IndexFileGetSize(PyObject *Self,void*) {
+   return Py_BuildValue("i",(File->Size()));
+}
+static PyObject *IndexFileGetIsTrusted(PyObject *Self,void*) {
+   return Py_BuildValue("i",(File->IsTrusted()));
+}
+#undef File
 
-static PyObject *PackageIndexFileRepr(PyObject *Self)
+#define S(x) (x ? x : "")
+static PyObject *IndexFileRepr(PyObject *Self)
 {
    pkgIndexFile *File = GetCpp<pkgIndexFile*>(Self);
-
-   char S[1024];
-   snprintf(S,sizeof(S),"<pkIndexFile object: "
+   return PyString_FromFormat("<pkIndexFile object: "
 			"Label:'%s' Describe='%s' Exists='%i' "
-	                "HasPackages='%i' Size='%i'  "
+	                "HasPackages='%i' Size='%lu'  "
  	                "IsTrusted='%i' ArchiveURI='%s'>",
-	    File->GetType()->Label,  File->Describe().c_str(), File->Exists(),
+	    S(File->GetType()->Label),  File->Describe().c_str(), File->Exists(),
 	    File->HasPackages(), File->Size(),
             File->IsTrusted(), File->ArchiveURI("").c_str());
-   return PyString_FromString(S);
 }
+#undef S
 
-PyTypeObject PackageIndexFileType =
+static PyGetSetDef IndexFileGetSet[] = {
+    {"describe",IndexFileGetDescribe},
+    {"exists",IndexFileGetExists},
+    {"has_packages",IndexFileGetHasPackages},
+    {"is_trusted",IndexFileGetIsTrusted},
+    {"label",IndexFileGetLabel},
+    {"size",IndexFileGetSize},
+    {}
+};
+
+PyTypeObject PyIndexFile_Type =
 {
-   PyObject_HEAD_INIT(&PyType_Type)
-   0,			                // ob_size
-   "pkgIndexFile",         // tp_name
-   sizeof(CppOwnedPyObject<pkgIndexFile*>),   // tp_basicsize
+   PyVarObject_HEAD_INIT(&PyType_Type, 0)
+   "apt_pkg.IndexFile",          // tp_name
+   sizeof(CppPyObject<pkgIndexFile*>),   // tp_basicsize
    0,                                   // tp_itemsize
    // Methods
-   CppOwnedDealloc<pkgIndexFile*>,          // tp_dealloc
+   // Not ..Ptr, because the pointer is managed somewhere else.
+   CppDeallocPtr<pkgIndexFile*>,   // tp_dealloc
    0,                                   // tp_print
-   PackageIndexFileAttr,                     // tp_getattr
+   0,                                   // tp_getattr
    0,                                   // tp_setattr
    0,                                   // tp_compare
-   PackageIndexFileRepr,                     // tp_repr
+   IndexFileRepr,                // tp_repr
    0,                                   // tp_as_number
-   0,		                        // tp_as_sequence
-   0,			                // tp_as_mapping
+   0,                                   // tp_as_sequence
+   0,                                   // tp_as_mapping
    0,                                   // tp_hash
+   0,                                   // tp_call
+   0,                                   // tp_str
+   _PyAptObject_getattro,               // tp_getattro
+   0,                                   // tp_setattro
+   0,                                   // tp_as_buffer
+   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, // tp_flags
+   "IndexFile Object",               // tp_doc
+   CppTraverse<pkgIndexFile*>,     // tp_traverse
+   CppClear<pkgIndexFile*>,        // tp_clear
+   0,                                   // tp_richcompare
+   0,                                   // tp_weaklistoffset
+   0,                                   // tp_iter
+   0,                                   // tp_iternext
+   IndexFileMethods,             // tp_methods
+   0,                                   // tp_members
+   IndexFileGetSet,              // tp_getset
 };
 
 

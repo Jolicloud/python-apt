@@ -6,17 +6,17 @@ import apt_pkg
 
 def main():
     """Main."""
-    apt_pkg.InitConfig()
-    apt_pkg.InitSystem()
-    cache = apt_pkg.GetCache()
+    apt_pkg.init_config()
+    apt_pkg.init_system()
+    cache = apt_pkg.Cache()
     print "Essential packages:"
-    for pkg in cache.Packages:
-        if pkg.Essential:
-            print " ", pkg.Name
+    for pkg in cache.packages:
+        if pkg.essential:
+            print " ", pkg.name
     print "Important packages:"
-    for pkg in cache.Packages:
-        if pkg.Important:
-            print " ", pkg.Name
+    for pkg in cache.packages:
+        if pkg.important:
+            print " ", pkg.name
 
 if __name__ == "__main__":
     main()

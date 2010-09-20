@@ -10,7 +10,7 @@ from progress import TextFetchProgress
 apt_pkg.init()
 
 progress = OpTextProgress()
-cache = apt_pkg.GetCache(progress)
+cache = apt_pkg.Cache(progress)
 print "Available packages: %s " % cache.PackageCount
 
 print "Fetching"
@@ -25,7 +25,7 @@ print "example package iter: %s" % iter
 
 # get depcache
 print "\n\n depcache"
-depcache = apt_pkg.GetDepCache(cache, progress)
+depcache = apt_pkg.DepCache(cache, progress)
 depcache.ReadPinFile()
 print "got a depcache: %s " % depcache
 print "Marked for install: %s " % depcache.InstCount

@@ -1,0 +1,199 @@
+What's New In python-apt 0.7.100
+================================
+Python-apt 0.7.100 is a new major release of the python bindings for the APT
+package management libraries. It provides support for Python 3, new language
+features and an API conforming to :PEP:`8`.
+
+Despite the many changes made in python-apt 0.7.100, the release still provides
+backwards compatibility to the 0.7 series. This makes it possible to run your
+old applications.
+
+.. note::
+
+    Applications using the old API should be updated to the new API because
+    the old ones will be dropped in the 0.8 release. To build a python-apt
+    variant without the deprecated API, build it without the -DCOMPAT_0_7
+    compiler flag.
+
+Support for Python 3
+--------------------
+Python-apt is the first Debian package to support the third major release of
+Python. The port is straight forward and integrates as nicely in Python 3 as
+the Python 2 builds integrate in Python 2.
+
+Please be aware that python-apt builds for Python 3 are built without the
+compatibility options enabled for Python 2 builds. They also do not provide
+methods like :meth:`has_key` on mapping objects, because it has been removed
+in Python 3.
+
+Python 3 support may be disabled by distributions.
+
+Real classes in :mod:`apt_pkg`
+------------------------------
+The 0.7.100 release introduces real classes in the :mod:`apt_pkg` extension. This
+is an important step forward and makes writing code much easier, because you
+can see the classes without having to create an object first. It also makes
+it easier to talk about those classes, because they have a real name now.
+
+The 0.7 series shipped many functions for creating new objects, because the
+classes were not exported. In 0.7.100, the classes themselves replace those
+functions, as you can see in the following table.
+
+.. table::
+
+    ===================================== =================================
+    Function                               Replacing class
+    ===================================== =================================
+    :func:`apt_pkg.GetAcquire`            :class:`apt_pkg.Acquire`
+    :func:`apt_pkg.GetCache()`            :class:`apt_pkg.Cache`
+    :func:`apt_pkg.GetCdrom()`            :class:`apt_pkg.Cdrom`
+    :func:`apt_pkg.GetDepCache()`         :class:`apt_pkg.DepCache`
+    :func:`apt_pkg.GetPackageManager`     :class:`apt_pkg.PackageManager`
+    :func:`apt_pkg.GetPkgAcqFile`         :class:`apt_pkg.AcquireFile`
+    :func:`apt_pkg.GetPkgActionGroup`     :class:`apt_pkg.ActionGroup`
+    :func:`apt_pkg.GetPkgProblemResolver` :class:`apt_pkg.ProblemResolver`
+    :func:`apt_pkg.GetPkgRecords`         :class:`apt_pkg.PackageRecords`
+    :func:`apt_pkg.GetPkgSourceList`      :class:`apt_pkg.SourceList`
+    :func:`apt_pkg.GetPkgSrcRecords`      :class:`apt_pkg.SourceRecords`
+    :func:`apt_pkg.ParseSection`          :class:`apt_pkg.TagSection`
+    :func:`apt_pkg.ParseTagFile`          :class:`apt_pkg.TagFile`
+    ===================================== =================================
+
+Complete rename of functions, methods and attributes
+-----------------------------------------------------
+In May 2008, Ben Finney reported bug 481061 against the python-apt package,
+asking for PEP8 conformant names. With the release of python-apt 0.7.100, this
+is finally happening.
+
+Context managers for the :keyword:`with` statement
+--------------------------------------------------
+This is not a real big change, but it's good to have it:
+:class:`apt_pkg.ActionGroup` can now be used as a context manager for the
+:keyword:`with` statement. This makes it more obvious that you are using an
+action group, and is just cooler::
+
+    with apt_pkg.ActionGroup(depcache):
+        for package in my_selected_packages:
+            depcache.mark_install(package)
+
+This also works for :class:`apt.Cache`::
+
+    with cache.actiongroup(): # cache is an Instance of apt.Cache
+        for package in my_selected_packages:
+            package.mark_install() # Instance of apt.Package
+
+Yet another context manager is available for locking the package system::
+
+    with apt_pkg.SystemLock():
+        # do your stuff here
+        pass
+
+There is also one for file based locking::
+
+    with apt_pkg.FileLock(filename):
+        # do your stuff here
+        pass
+
+
+Unification of dependency handling
+----------------------------------
+In apt 0.7.XX, there were three different return types of functions parsing
+dependencies.
+
+First of all, there were :func:`apt_pkg.ParseDepends()` and
+:func:`apt_pkg.ParseSrcDepends()` which returned a list of or groups (which
+are lists themselves) which contain tuples in the format ``(package,ver,op)``,
+whereas op is one of "<=",">=","<<",">>","=","!=".
+
+Secondly, there was Package.DependsListStr which returned a dictionary mapping
+the type of the dependency (e.g. 'Depends', 'Recommends') to a list similar to
+those of :func:`apt_pkg.ParseDepends()`. The only difference was that the
+values ">>", "<<" of op are ">", "<" instead.
+
+Thirdly, there was SourceRecords.BuildDepends, which returned a simple list
+of tuples in the format ``(package, version, op, type)``, whereas ``op`` was
+the integer representation of those ">>", "<<" actions and ``type`` an integer
+representing the type of the dependency (e.g. 'Build-Depends'). The whole
+format was almost useless from the Python perspective because the string
+representations or constants for checking the values were not exported.
+
+python-apt 0.7.100 puts an end to this confusion and uses one basic format, which
+is the format known from Package.DependsListStr. The format change only applies
+to the new functions and attributes, i.e. :attr:`SourceRecords.build_depends`
+will now return a dict, whereas :attr:`SourceRecords.BuildDepends` will still
+return the classic format. The functions :func:`apt_pkg.parse_depends` and
+:func:`apt_pkg.parse_src_depends` now use the same values for ``op`` as
+:attr:`Package.DependsListStr` does.
+
+Example::
+
+    >>> s = apt_pkg.SourceRecords()
+    >>> s.lookup("apt")
+    1
+    >>> s.build_depends
+    {'Build-Depends': [[('debhelper', '5.0', '>=')],
+                       [('libdb-dev', '', '')],
+                       [('gettext', '0.12', '>=')],
+                       [('libcurl4-gnutls-dev', '', ''),
+                        ('libcurl3-gnutls-dev', '7.15.5', '>=')],
+                       [('debiandoc-sgml', '', '')],
+                       [('docbook-utils', '0.6.12', '>=')],
+                       [('xsltproc', '', '')],
+                       [('docbook-xsl', '', '')],
+                       [('xmlto', '', '')]]}
+    >>> s.BuildDepends
+    [('debhelper', '5.0', 2, 0),
+    ('libdb-dev', '', 0, 0),
+    ('gettext', '0.12', 2, 0),
+    ('libcurl4-gnutls-dev', '', 16, 0),
+    ('libcurl3-gnutls-dev', '7.15.5', 2, 0),
+    ('debiandoc-sgml', '', 0, 0),
+    ('docbook-utils', '0.6.12', 2, 0),
+    ('xsltproc', '', 0, 0),
+    ('docbook-xsl', '', 0, 0),
+    ('xmlto', '', 0, 0)]
+
+C++ headers
+------------
+The 0.7.100 release introduces python-apt-dev which provides headers for
+developers to provide Python support in the libapt-pkg-using application.
+
+.. warning::
+
+    As of 0.7.93, those headers are still considered experimental and their
+    API may change without prior notice.
+
+Other changes
+-------------
+This release of python-apt also features several other, smaller changes:
+
+    * Reduced memory usage by making :class:`apt.Cache` create
+      :class:`apt.Package()` object dynamically, instead of creating all of
+      them during the cache initialization.
+    * Support to set the candidate version in :class:`apt.package.Package`
+
+Porting your applications to python-apt 0.8 API
+------------------------------------------------
+Porting your application to the new python-apt 0.8 API may be trivial. You
+should download the source tarball of python-apt and run the tool
+utils/migrate-0.8 using Python 2.6 over your code::
+
+    python2.6 utils/migrate-0.8.py -c myapp.py mypackage/
+
+This will search your code for places where possibly deprecated names are
+used. Using the argument ``-c``, you can turn colorized output on.
+
+Now that you know which parts of your code have to be changed, you have to know
+how to do this. For classes, please look at the table. For all attributes,
+methods, functions, and their parameters the following rules apply:
+
+    1. Replace leading [A-Z] with [a-z] (e.g DescURI => descURI)
+    2. Replace multiple [A-Z] with [A-Z][a-z] (e.g. descURI => descUri)
+    3. Replace every [A-Z] with the corresponding [a-z] (descUri => desc_uri)
+
+As an exception, refixes such as 'de' (e.g. 'dequote') or 'un' (e.g. 'unlock')
+are normally not separated by underscores from the next word. There are also
+some other exceptions which are listed here, and apply to any name containing
+this word: **filename**, **filesize**, **destdir**, **destfile**, **dequote**,
+**unlock**, **reinstall**, **pinfile**, **REINSTREQ**, **UNPACKED**,
+**parse_commandline**.

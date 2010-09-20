@@ -1,13 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/python
+#  get_debian_mirrors.py - Parse Mirrors.masterlist and create a mirror list.
 #
-#  get_debian_mirrors.py
-#
-#  Download the latest list with available mirrors from the Debian
-#  website and extract the hosts from the raw page
-#
-#  Copyright (c) 2006, 2009 Free Software Foundation Europe
-#
-#  Author: Sebastian Heinlein <glatzor@ubuntu.com>
+#  Copyright (c) 2010 Julian Andres Klode <jak@debian.org>
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License as
@@ -23,52 +17,22 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 #  USA
-
+import collections
 import urllib2
-import re
-import os
-import commands
-import sys
+from debian_bundle import deb822
 
-# the list of official Ubuntu servers
-mirrors = []
-# path to the local mirror list
-list_path = "../data/templates/Debian.mirrors"
+mirrors = collections.defaultdict(set)
+masterlist = urllib2.urlopen("http://cvs.debian.org/webwml/webwml/english/"
+                             "mirror/Mirrors.masterlist?revision=HEAD")
 
-req = urllib2.Request("http://www.debian.org/mirror/mirrors_full")
-match = re.compile("^.*>([A-Za-z0-9-.\/_]+)<\/a>.*\n$")
-match_location = re.compile('^<h3><a name="([A-Z]+)">.*')
-match_sites = re.compile('^Site: <tt>([A-Za-z0-9-.\ \/_,]+)<\/tt>.*\n$')
+for mirror in deb822.Deb822.iter_paragraphs(masterlist):
+    country = mirror["Country"].split(None, 1)[0]
+    site = mirror["Site"]
+    for proto in 'http', 'ftp':
+        if "Archive-%s" % proto in mirror:
+            mirrors[country].add("%s://%s%s" % (proto, site,
+                                                mirror["Archive-%s" % proto]))
 
-
-def add_sites(line, proto, sites, mirror_type):
-    path = match.sub(r"\1", line)
-    for site in sites:
-        mirror_type.append("%s://%s%s\n" % (proto, site.lstrip(), path))
-
-
-try:
-    print "Downloading mirrors list from the Debian website..."
-    uri=urllib2.urlopen(req)
-    for line in uri.readlines():
-        if line.startswith('<h3><a name="'):
-            location = match_location.sub(r"\1", line)
-            if location:
-                mirrors.append("#LOC:%s" % location)
-        if line.startswith("Site:"):
-            sites = match_sites.sub(r"\1", line).split(",")
-        elif line.startswith('<br>Packages over HTTP'):
-            add_sites(line, "http", sites, mirrors)
-        elif line.startswith('<br>Packages over FTP'):
-            add_sites(line, "ftp", sites, mirrors)
-    uri.close()
-except:
-    print "Failed to download or to extract the mirrors list!"
-    sys.exit(1)
-
-print "Writing local mirrors list: %s" % list_path
-list = open(list_path, "w")
-for mirror in mirrors:
-    list.write("%s" % mirror)
-list.close()
-print "Done."
+for country in sorted(mirrors):
+    print "#LOC:%s" % country
+    print "\n".join(sorted(mirrors[country]))

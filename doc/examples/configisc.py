@@ -17,7 +17,7 @@ if len(ConfigFile) != 1:
     print "Must have exactly 1 file name"
     sys.exit(0)
 
-Cnf = apt_pkg.newConfiguration()
+Cnf = apt_pkg.Configuration()
 apt_pkg.ReadConfigFileISC(Cnf, ConfigFile[0])
 
 # Print the configuration space

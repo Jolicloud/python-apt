@@ -1,20 +1,33 @@
 #!/usr/bin/make -f
-export DH_PYCENTRAL=include-links
+# Should be include-links, but that somehow fails.
+export DH_PYCENTRAL=nomove
 export DEBVER=$(shell dpkg-parsechangelog | sed -n -e 's/^Version: //p')
-export CFLAGS=-Wno-write-strings
+export CFLAGS=-Wno-write-strings -DCOMPAT_0_7
 
 %:
 	dh --with python-central $@
 
+override_dh_auto_build:
+	dh_auto_build
+
 override_dh_installdocs:
-	dh_installdocs
-	ln -sf ../../../../javascript/jquery/jquery.js \
-	       debian/python-apt/usr/share/doc/python-apt/html/_static/jquery.js
-	rm -rf debian/python-apt-dbg/usr/share/doc/python-apt-dbg
-	ln -s python-apt debian/python-apt-dbg/usr/share/doc/python-apt-dbg
+	set -e; if [ -z $(filter -a,$(DH_INTERNAL_OPTIONS)) ]; then \
+		python setup.py build_sphinx; \
+		dh_installdirs -ppython-apt-doc usr/share/doc/python-apt; \
+	fi
+	dh_installdirs -ppython-apt-dev usr/share/doc/python-apt
+	dh_installdocs --link-doc=python-apt
 
 override_dh_strip:
 	dh_strip --dbg-package=python-apt-dbg
 
 override_dh_compress:
 	dh_compress -X.js -X_static/* -X _sources/* -X_sources/*/* -X.inv
+
+override_dh_auto_test:
+	set -e; for python in $(shell pyversions -r); do \
+		$$python tests/test_all.py -q; \
+	done;
+
+override_dh_pycentral:
+	dh_pycentral --exclude=migrate-0.8.py

@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     print "Now extracting the control file:"
     control = apt_inst.debExtractControl(open(file))
-    sections = apt_pkg.ParseSection(control)
+    sections = apt_pkg.TagSection(control)
 
     print "Maintainer is: "
     print sections["Maintainer"]

@@ -44,4 +44,4 @@ keys = countries.keys()
 keys.sort()
 for country in keys:
     print "#LOC:%s" % country
-    print "\n".join(countries[country])
+    print "\n".join(sorted(countries[country]))

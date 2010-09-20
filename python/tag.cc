@@ -39,13 +39,26 @@ struct TagSecData : public CppPyObject<pkgTagSection>
    char *Data;
 };
 
-struct TagFileData : public PyObject
+// The owner of the TagFile is a Python file object.
+struct TagFileData : public CppPyObject<pkgTagFile>
 {
-   pkgTagFile Object;
-   PyObject *File;
    TagSecData *Section;
    FileFd Fd;
 };
+
+// Traversal and Clean for owned objects
+int TagFileTraverse(PyObject *self, visitproc visit, void* arg) {
+    Py_VISIT(((TagFileData *)self)->Section);
+    Py_VISIT(((TagFileData *)self)->Owner);
+    return 0;
+}
+
+int TagFileClear(PyObject *self) {
+    Py_CLEAR(((TagFileData *)self)->Section);
+    Py_CLEAR(((TagFileData *)self)->Owner);
+    return 0;
+}
+
 
 									/*}}}*/
 // TagSecFree - Free a Tag Section					/*{{{*/
@@ -63,12 +76,15 @@ void TagSecFree(PyObject *Obj)
 /* */
 void TagFileFree(PyObject *Obj)
 {
+   #ifdef ALLOC_DEBUG
+   std::cerr << "=== DEALLOCATING " << Obj->ob_type->tp_name << "^ ===\n";
+   #endif
    TagFileData *Self = (TagFileData *)Obj;
-   Py_DECREF((PyObject *)Self->Section);
+   Py_CLEAR(Self->Section);
    Self->Object.~pkgTagFile();
    Self->Fd.~FileFd();
-   Py_DECREF(Self->File);
-   PyObject_DEL(Obj);
+   Py_CLEAR(Self->Owner);
+   Obj->ob_type->tp_free(Obj);
 }
 									/*}}}*/
 
@@ -183,6 +199,7 @@ static PyObject *TagSecKeys(PyObject *Self,PyObject *Args)
    return List;
 }
 
+#if PY_MAJOR_VERSION < 3
 static char *doc_Exists = "Exists(Name) -> integer";
 static PyObject *TagSecExists(PyObject *Self,PyObject *Args)
 {
@@ -195,6 +212,19 @@ static PyObject *TagSecExists(PyObject *Self,PyObject *Args)
    if (GetCpp<pkgTagSection>(Self).Find(Name,Start,Stop) == false)
       return Py_BuildValue("i",0);
    return Py_BuildValue("i",1);
+}
+#endif
+
+static int TagSecContains(PyObject *Self,PyObject *Arg)
+{
+   if (PyString_Check(Arg) == 0)
+       return 0;
+   const char *Name = PyString_AsString(Arg);
+   const char *Start;
+   const char *Stop;
+   if (GetCpp<pkgTagSection>(Self).Find(Name,Start,Stop) == false)
+      return 0;
+   return 1;
 }
 
 static char *doc_Bytes = "Bytes() -> integer";
@@ -228,6 +258,44 @@ static PyObject *TagFileStep(PyObject *Self,PyObject *Args)
    return HandleErrors(Py_BuildValue("i",1));
 }
 
+// TagFile Wrappers							/*{{{*/
+static PyObject *TagFileNext(PyObject *Self)
+{
+   TagFileData &Obj = *(TagFileData *)Self;
+   // Replace the section.
+   Py_CLEAR(Obj.Section);
+   Obj.Section = (TagSecData*)(&PyTagSection_Type)->tp_alloc(&PyTagSection_Type, 0);
+   new (&Obj.Section->Object) pkgTagSection();
+   Obj.Section->Owner = Self;
+   Py_INCREF(Obj.Section->Owner);
+   Obj.Section->Data = 0;
+   if (Obj.Object.Step(Obj.Section->Object) == false)
+      return HandleErrors(NULL);
+
+   // Bug-Debian: http://bugs.debian.org/572596
+   // Duplicate the data here and scan the duplicated section data; in order
+   // to not use any shared storage.
+   // TODO: Provide an API in apt-pkg to do this; this is really ugly.
+
+   // Fetch old section data
+   const char *Start;
+   const char *Stop;
+   Obj.Section->Object.GetSection(Start,Stop);
+   // Duplicate the data
+   Obj.Section->Data = new char[Stop-Start];
+   strncpy(Obj.Section->Data, Start, Stop-Start);
+   // Rescan it
+   Obj.Section->Object.Scan(Obj.Section->Data, Stop-Start);
+
+   Py_INCREF(Obj.Section);
+   return HandleErrors(Obj.Section);
+}
+
+static PyObject *TagFileIter(PyObject *Self) {
+    Py_INCREF(Self);
+    return Self;
+}
+
 static char *doc_Offset = "Offset() -> Integer";
 static PyObject *TagFileOffset(PyObject *Self,PyObject *Args)
 {
@@ -252,15 +320,14 @@ static PyObject *TagFileJump(PyObject *Self,PyObject *Args)
 									/*}}}*/
 // ParseSection - Parse a single section from a tag file		/*{{{*/
 // ---------------------------------------------------------------------
-char *doc_ParseSection ="ParseSection(Text) -> SectionObject";
-PyObject *ParseSection(PyObject *self,PyObject *Args)
-{
+static PyObject *TagSecNew(PyTypeObject *type,PyObject *Args,PyObject *kwds) {
    char *Data;
-   if (PyArg_ParseTuple(Args,"s",&Data) == 0)
+   char *kwlist[] = {"text", 0};
+   if (PyArg_ParseTupleAndKeywords(Args,kwds,"s",kwlist,&Data) == 0)
       return 0;
 
    // Create the object..
-   TagSecData *New = PyObject_NEW(TagSecData,&TagSecType);
+   TagSecData *New = (TagSecData*)type->tp_alloc(type, 0);
    new (&New->Object) pkgTagSection();
    New->Data = new char[strlen(Data)+2];
    snprintf(New->Data,strlen(Data)+2,"%s\n",Data);
@@ -277,30 +344,58 @@ PyObject *ParseSection(PyObject *self,PyObject *Args)
 
    return New;
 }
+
+#ifdef COMPAT_0_7
+char *doc_ParseSection ="ParseSection(Text) -> TagSection() object. Deprecated.";
+PyObject *ParseSection(PyObject *self,PyObject *Args)
+{
+   if (getenv("PYTHON_APT_DEPRECATION_WARNINGS") != NULL)
+      PyErr_WarnEx(PyExc_DeprecationWarning, "apt_pkg.ParseSection() is "
+                   "deprecated. Please see apt_pkg.TagSection() for the "
+                   "replacement.", 1);
+    return TagSecNew(&PyTagSection_Type,Args,0);
+}
+#endif
 									/*}}}*/
 // ParseTagFile - Parse a tagd file					/*{{{*/
 // ---------------------------------------------------------------------
 /* This constructs the parser state. */
-char *doc_ParseTagFile = "ParseTagFile(File) -> TagFile";
-PyObject *ParseTagFile(PyObject *self,PyObject *Args)
+
+static PyObject *TagFileNew(PyTypeObject *type,PyObject *Args,PyObject *kwds)
 {
    PyObject *File;
-   if (PyArg_ParseTuple(Args,"O!",&PyFile_Type,&File) == 0)
+   char *kwlist[] = {"file", 0};
+   if (PyArg_ParseTupleAndKeywords(Args,kwds,"O",kwlist,&File) == 0)
+      return 0;
+   int fileno = PyObject_AsFileDescriptor(File);
+   if (fileno == -1)
       return 0;
 
-   TagFileData *New = PyObject_NEW(TagFileData,&TagFileType);
-   new (&New->Fd) FileFd(fileno(PyFile_AsFile(File)),false);
-   New->File = File;
-   Py_INCREF(New->File);
+   TagFileData *New = (TagFileData*)type->tp_alloc(type, 0);
+   new (&New->Fd) FileFd(fileno,false);
+   New->Owner = File;
+   Py_INCREF(New->Owner);
    new (&New->Object) pkgTagFile(&New->Fd);
 
    // Create the section
-   New->Section = PyObject_NEW(TagSecData,&TagSecType);
+   New->Section = (TagSecData*)(&PyTagSection_Type)->tp_alloc(&PyTagSection_Type, 0);
    new (&New->Section->Object) pkgTagSection();
+   New->Section->Owner = New;
+   Py_INCREF(New->Section->Owner);
    New->Section->Data = 0;
 
    return HandleErrors(New);
 }
+#ifdef COMPAT_0_7
+char *doc_ParseTagFile = "ParseTagFile(File) -> TagFile() object. Deprecated.";
+PyObject *ParseTagFile(PyObject *self,PyObject *Args) {
+   if (getenv("PYTHON_APT_DEPRECATION_WARNINGS") != NULL)
+      PyErr_WarnEx(PyExc_DeprecationWarning, "apt_pkg.ParseTagFile() is "
+                   "deprecated. Please see apt_pkg.TagFile() for the "
+                   "replacement.", 1);
+    return TagFileNew(&PyTagFile_Type,Args,0);
+}
+#endif
 									/*}}}*/
 // RewriteSection - Rewrite a section..					/*{{{*/
 // ---------------------------------------------------------------------
@@ -326,7 +421,7 @@ PyObject *RewriteSection(PyObject *self,PyObject *Args)
    PyObject *Section;
    PyObject *Order;
    PyObject *Rewrite;
-   if (PyArg_ParseTuple(Args,"O!O!O!",&TagSecType,&Section,
+   if (PyArg_ParseTuple(Args,"O!O!O!",&PyTagSection_Type,&Section,
 			&PyList_Type,&Order,&PyList_Type,&Rewrite) == 0)
       return 0;
 
@@ -377,93 +472,155 @@ PyObject *RewriteSection(PyObject *self,PyObject *Args)
 static PyMethodDef TagSecMethods[] =
 {
    // Query
-   {"Find",TagSecFind,METH_VARARGS,doc_Find},
-   {"FindRaw",TagSecFindRaw,METH_VARARGS,doc_FindRaw},
-   {"FindFlag",TagSecFindFlag,METH_VARARGS,doc_FindFlag},
-   {"Bytes",TagSecBytes,METH_VARARGS,doc_Bytes},
+   {"find",TagSecFind,METH_VARARGS,doc_Find},
+   {"find_raw",TagSecFindRaw,METH_VARARGS,doc_FindRaw},
+   {"find_flag",TagSecFindFlag,METH_VARARGS,doc_FindFlag},
+   {"bytes",TagSecBytes,METH_VARARGS,doc_Bytes},
 
    // Python Special
    {"keys",TagSecKeys,METH_VARARGS,doc_Keys},
+#if PY_MAJOR_VERSION < 3
    {"has_key",TagSecExists,METH_VARARGS,doc_Exists},
+#endif
    {"get",TagSecFind,METH_VARARGS,doc_Find},
    {}
 };
 
-// TagSecGetAttr - Get an attribute - variable/method			/*{{{*/
-// ---------------------------------------------------------------------
-/* */
-static PyObject *TagSecGetAttr(PyObject *Self,char *Name)
-{
-   return Py_FindMethod(TagSecMethods,Self,Name);
-}
-									/*}}}*/
-// Type for a Tag Section
+
+PySequenceMethods TagSecSeqMeth = {0,0,0,0,0,0,0,TagSecContains,0,0};
 PyMappingMethods TagSecMapMeth = {TagSecLength,TagSecMap,0};
-PyTypeObject TagSecType =
+
+
+static char *doc_TagSec = "TagSection(text) -> Create a new object.\n\n"
+   "TagSection() objects provide methods to access rfc822-style formatted\n"
+   "header sections, like those in debian/control or Packages files.\n\n"
+   "TagSection() behave like read-only dictionaries and also provide access\n"
+   "to the functions provided by the C++ class (e.g. Find)";
+PyTypeObject PyTagSection_Type =
 {
-   PyObject_HEAD_INIT(&PyType_Type)
-   0,			                // ob_size
-   "TagSection",	                // tp_name
+   PyVarObject_HEAD_INIT(&PyType_Type, 0)
+   "apt_pkg.TagSection",                // tp_name
    sizeof(TagSecData),                  // tp_basicsize
    0,                                   // tp_itemsize
    // Methods
    TagSecFree,                          // tp_dealloc
-   0,		                        // tp_print
-   TagSecGetAttr,                       // tp_getattr
+   0,                                   // tp_print
+   0,                                   // tp_getattr
    0,                                   // tp_setattr
    0,                                   // tp_compare
    0,                                   // tp_repr
    0,                                   // tp_as_number
-   0,                                   // tp_as_sequence
+   &TagSecSeqMeth,                      // tp_as_sequence
    &TagSecMapMeth,                      // tp_as_mapping
    0,                                   // tp_hash
-   0,					// tp_call
-   TagSecStr,				// tp_str
+   0,                                   // tp_call
+   TagSecStr,                           // tp_str
+   _PyAptObject_getattro,               // tp_getattro
+   0,                                   // tp_setattro
+   0,                                   // tp_as_buffer
+   (Py_TPFLAGS_DEFAULT |                // tp_flags
+    Py_TPFLAGS_BASETYPE |
+    Py_TPFLAGS_HAVE_GC),
+   doc_TagSec,                          // tp_doc
+   CppTraverse<pkgTagSection>,     // tp_traverse
+   CppClear<pkgTagSection>,         // tp_clear
+   0,                                   // tp_richcompare
+   0,                                   // tp_weaklistoffset
+   0,                                   // tp_iter
+   0,                                   // tp_iternext
+   TagSecMethods,                       // tp_methods
+   0,                                   // tp_members
+   0,                                   // tp_getset
+   0,                                   // tp_base
+   0,                                   // tp_dict
+   0,                                   // tp_descr_get
+   0,                                   // tp_descr_set
+   0,                                   // tp_dictoffset
+   0,                                   // tp_init
+   0,                                   // tp_alloc
+   TagSecNew,                           // tp_new
 };
 
 // Method table for the Tag File object
 static PyMethodDef TagFileMethods[] =
 {
    // Query
-   {"Step",TagFileStep,METH_VARARGS,doc_Step},
-   {"Offset",TagFileOffset,METH_VARARGS,doc_Offset},
-   {"Jump",TagFileJump,METH_VARARGS,doc_Jump},
+   {"step",TagFileStep,METH_VARARGS,doc_Step},
+   {"offset",TagFileOffset,METH_VARARGS,doc_Offset},
+   {"jump",TagFileJump,METH_VARARGS,doc_Jump},
 
    {}
 };
 
-// TagFileGetAttr - Get an attribute - variable/method			/*{{{*/
-// ---------------------------------------------------------------------
-/* */
-static PyObject *TagFileGetAttr(PyObject *Self,char *Name)
-{
-   if (strcmp("Section",Name) == 0)
-   {
-      PyObject *Obj = ((TagFileData *)Self)->Section;
-      Py_INCREF(Obj);
-      return Obj;
-   }
-
-   return Py_FindMethod(TagFileMethods,Self,Name);
+// Return the current section.
+static PyObject *TagFileGetSection(PyObject *Self,void*) {
+   PyObject *Obj = ((TagFileData *)Self)->Section;
+   Py_INCREF(Obj);
+   return Obj;
 }
 
+static PyGetSetDef TagFileGetSet[] = {
+    {"section",TagFileGetSection,0,"Return a TagSection.",0},
+    {}
+};
+
+
+static char *doc_TagFile = "TagFile(file) -> TagFile() object. \n\n"
+   "TagFile() objects provide access to debian control files, which consists\n"
+   "of multiple RFC822-like formatted sections.\n\n"
+   "To provide access to those sections, TagFile objects provide an iterator\n"
+   "which yields TagSection objects for each section.\n\n"
+   "TagFile objects also provide another API which uses a shared TagSection\n"
+   "object in the 'section' member. The functions step() and jump() can be\n"
+   "used to navigate in the file; and offset() tells the current position.\n\n"
+   "It is important to not mix the use of both APIs, because this can have\n"
+   "unwanted effects.\n\n"
+   "The parameter *file* refers to an object providing a fileno() method or\n"
+   "a file descriptor (an integer)";
+
 // Type for a Tag File
-PyTypeObject TagFileType =
+PyTypeObject PyTagFile_Type =
 {
-   PyObject_HEAD_INIT(&PyType_Type)
-   0,			                // ob_size
-   "TagFile",		                // tp_name
+   PyVarObject_HEAD_INIT(&PyType_Type, 0)
+   "apt_pkg.TagFile",                   // tp_name
    sizeof(TagFileData),                 // tp_basicsize
    0,                                   // tp_itemsize
    // Methods
    TagFileFree,                         // tp_dealloc
    0,                                   // tp_print
-   TagFileGetAttr,                      // tp_getattr
+   0,                                   // tp_getattr
    0,                                   // tp_setattr
    0,                                   // tp_compare
    0,                                   // tp_repr
    0,                                   // tp_as_number
    0,                                   // tp_as_sequence
-   0,		                        // tp_as_mapping
+   0,                                   // tp_as_mapping
    0,                                   // tp_hash
+   0,                                   // tp_call
+   0,                                   // tp_str
+   _PyAptObject_getattro,               // tp_getattro
+   0,                                   // tp_setattro
+   0,                                   // tp_as_buffer
+   (Py_TPFLAGS_DEFAULT |                // tp_flags
+    Py_TPFLAGS_BASETYPE |
+    Py_TPFLAGS_HAVE_GC),
+   doc_TagFile,                         // tp_doc
+   TagFileTraverse,                     // tp_traverse
+   TagFileClear,                        // tp_clear
+   0,                                   // tp_richcompare
+   0,                                   // tp_weaklistoffset
+   TagFileIter,                         // tp_iter
+   TagFileNext,                         // tp_iternext
+   TagFileMethods,                      // tp_methods
+   0,                                   // tp_members
+   TagFileGetSet,                       // tp_getset
+   0,                                   // tp_base
+   0,                                   // tp_dict
+   0,                                   // tp_descr_get
+   0,                                   // tp_descr_set
+   0,                                   // tp_dictoffset
+   0,                                   // tp_init
+   0,                                   // tp_alloc
+   TagFileNew,                          // tp_new
+
 };

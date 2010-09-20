@@ -21,11 +21,11 @@ def get_source_pkg(pkg, records, depcache):
 
 # main
 apt_pkg.init()
-cache = apt_pkg.GetCache()
-depcache = apt_pkg.GetDepCache(cache)
+cache = apt_pkg.Cache()
+depcache = apt_pkg.DepCache(cache)
 depcache.Init()
-records = apt_pkg.GetPkgRecords(cache)
-srcrecords = apt_pkg.GetPkgSrcRecords()
+records = apt_pkg.PackageRecords(cache)
+srcrecords = apt_pkg.SourceRecords()
 
 # base package that we use for build-depends calculation
 if len(sys.argv) < 2:

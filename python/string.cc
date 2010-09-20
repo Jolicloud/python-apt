@@ -38,7 +38,21 @@ PyObject *Python(PyObject *Self,PyObject *Args) \
 }
 
 MkStr(StrDeQuote,DeQuoteString);
-MkStr(StrBase64Encode,Base64Encode);
+
+/*
+ * Input bytes(Py3k)/str(Py2), output str.
+ */
+PyObject *StrBase64Encode(PyObject *Self,PyObject *Args) {
+   char *Str = 0;
+   #if PY_MAJOR_VERSION >= 3
+   if (PyArg_ParseTuple(Args,"y",&Str) == 0)
+   #else
+   if (PyArg_ParseTuple(Args,"s",&Str) == 0)
+   #endif
+      return 0;
+   return CppPyString(Base64Encode(Str));
+}
+
 MkStr(StrURItoFileName,URItoFileName);
 
 //MkFloat(StrSizeToStr,SizeToStr);

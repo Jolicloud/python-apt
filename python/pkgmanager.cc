@@ -15,7 +15,37 @@
 #include <apt-pkg/sourcelist.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/acquire.h>
+#include <apt-pkg/init.h>
+#include <apt-pkg/configuration.h>
+
 #include <iostream>
+
+static PyObject *PkgManagerNew(PyTypeObject *type,PyObject *Args,PyObject *kwds)
+{
+   PyObject *Owner;
+   char *kwlist[] = {"depcache",0};
+   if (PyArg_ParseTupleAndKeywords(Args,kwds,"O!",kwlist,&PyDepCache_Type,
+                                   &Owner) == 0)
+      return 0;
+
+   pkgPackageManager *pm = _system->CreatePM(GetCpp<pkgDepCache*>(Owner));
+
+   CppPyObject<pkgPackageManager*> *PkgManagerObj =
+	   CppPyObject_NEW<pkgPackageManager*>(NULL, type,pm);
+
+   return PkgManagerObj;
+}
+
+#ifdef COMPAT_0_7
+PyObject *GetPkgManager(PyObject *Self,PyObject *Args)
+{
+    if (getenv("PYTHON_APT_DEPRECATION_WARNINGS") != NULL)
+       PyErr_WarnEx(PyExc_DeprecationWarning, "apt_pkg.GetPackageManager() is "
+                    "deprecated. Please see apt_pkg.PackageManager() for the "
+                    "replacement.", 1);
+    return PkgManagerNew(&PyPackageManager_Type,Args,0);
+}
+#endif
 
 
 static PyObject *PkgManagerGetArchives(PyObject *Self,PyObject *Args)
@@ -24,9 +54,9 @@ static PyObject *PkgManagerGetArchives(PyObject *Self,PyObject *Args)
    PyObject *fetcher, *list, *recs;
 
    if (PyArg_ParseTuple(Args, "O!O!O!",
-			&PkgAcquireType,&fetcher,
-			&PkgSourceListType, &list,
-			&PkgRecordsType, &recs) == 0)
+			&PyAcquire_Type,&fetcher,
+			&PySourceList_Type, &list,
+			&PyPackageRecords_Type, &recs) == 0)
       return 0;
 
    pkgAcquire *s_fetcher = GetCpp<pkgAcquire*>(fetcher);
@@ -68,67 +98,56 @@ static PyObject *PkgManagerFixMissing(PyObject *Self,PyObject *Args)
 
 static PyMethodDef PkgManagerMethods[] =
 {
-   {"GetArchives",PkgManagerGetArchives,METH_VARARGS,"Load the selected archives into the fetcher"},
-   {"DoInstall",PkgManagerDoInstall,METH_VARARGS,"Do the actual install"},
-   {"FixMissing",PkgManagerFixMissing,METH_VARARGS,"Fix the install if a pkg couldn't be downloaded"},
+   {"get_archives",PkgManagerGetArchives,METH_VARARGS,"Load the selected archives into the fetcher"},
+   {"do_install",PkgManagerDoInstall,METH_VARARGS,"Do the actual install"},
+   {"fix_missing",PkgManagerFixMissing,METH_VARARGS,"Fix the install if a pkg couldn't be downloaded"},
    {}
 };
 
 
-static PyObject *PkgManagerAttr(PyObject *Self,char *Name)
+PyTypeObject PyPackageManager_Type =
 {
-   //PkgManagerStruct &Struct = GetCpp<PkgManagerStruct>(Self);
-   pkgPackageManager *pm = GetCpp<pkgPackageManager*>(Self);
-
-   // some constants
-   if(strcmp("ResultCompleted",Name) == 0)
-      return Py_BuildValue("i", pkgPackageManager::Completed);
-   if(strcmp("ResultFailed",Name) == 0)
-      return Py_BuildValue("i", pkgPackageManager::Failed);
-   if(strcmp("ResultIncomplete",Name) == 0)
-      return Py_BuildValue("i", pkgPackageManager::Incomplete);
-
-   return Py_FindMethod(PkgManagerMethods,Self,Name);
-}
-
-
-PyTypeObject PkgManagerType =
-{
-   PyObject_HEAD_INIT(&PyType_Type)
-   0,			                // ob_size
-   "PackageManager",                          // tp_name
+   PyVarObject_HEAD_INIT(&PyType_Type, 0)
+   "apt_pkg.PackageManager",           // tp_name
    sizeof(CppPyObject<pkgPackageManager*>),   // tp_basicsize
    0,                                   // tp_itemsize
    // Methods
-   CppDealloc<pkgPackageManager*>,        // tp_dealloc
+   CppDeallocPtr<pkgPackageManager*>,   // tp_dealloc
    0,                                   // tp_print
-   PkgManagerAttr,                           // tp_getattr
+   0,                                   // tp_getattr
    0,                                   // tp_setattr
    0,                                   // tp_compare
    0,                                   // tp_repr
    0,                                   // tp_as_number
    0,                                   // tp_as_sequence
-   0,	                                // tp_as_mapping
+   0,                                   // tp_as_mapping
    0,                                   // tp_hash
+   0,                                   // tp_call
+   0,                                   // tp_str
+   _PyAptObject_getattro,               // tp_getattro
+   0,                                   // tp_setattro
+   0,                                   // tp_as_buffer
+   (Py_TPFLAGS_DEFAULT |                // tp_flags
+    Py_TPFLAGS_BASETYPE),
+   "PackageManager Object",             // tp_doc
+   0,                                   // tp_traverse
+   0,                                   // tp_clear
+   0,                                   // tp_richcompare
+   0,                                   // tp_weaklistoffset
+   0,                                   // tp_iter
+   0,                                   // tp_iternext
+   PkgManagerMethods,                   // tp_methods
+   0,                                   // tp_members
+   0,                                   // tp_getset
+   0,                                   // tp_base
+   0,                                   // tp_dict
+   0,                                   // tp_descr_get
+   0,                                   // tp_descr_set
+   0,                                   // tp_dictoffset
+   0,                                   // tp_init
+   0,                                   // tp_alloc
+   PkgManagerNew,                         // tp_new
 };
-
-#include <apt-pkg/init.h>
-#include <apt-pkg/configuration.h>
-
-PyObject *GetPkgManager(PyObject *Self,PyObject *Args)
-{
-   PyObject *Owner;
-   if (PyArg_ParseTuple(Args,"O!",&PkgDepCacheType,&Owner) == 0)
-      return 0;
-
-   pkgPackageManager *pm = _system->CreatePM(GetCpp<pkgDepCache*>(Owner));
-
-   CppPyObject<pkgPackageManager*> *PkgManagerObj =
-	   CppPyObject_NEW<pkgPackageManager*>(&PkgManagerType,pm);
-
-   return PkgManagerObj;
-}
-
 
 
 

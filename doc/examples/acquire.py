@@ -4,10 +4,10 @@ import apt_pkg
 import os
 
 
-def get_file(fetcher, uri, destFile):
+def get_file(fetcher, uri, destfile):
     # get the file
-    af = apt_pkg.GetPkgAcqFile(fetcher, uri=uri, descr="sample descr",
-                               destFile=destFile)
+    af = apt_pkg.AcquireFile(fetcher, uri=uri, descr="sample descr",
+                               destfile=destfile)
     res = fetcher.Run()
     if res != fetcher.ResultContinue:
         return False
@@ -19,21 +19,21 @@ apt_pkg.init()
 #apt_pkg.Config.Set("Debug::pkgPackageManager","1");
 #apt_pkg.Config.Set("Debug::pkgDPkgProgressReporting","1");
 
-cache = apt_pkg.GetCache()
-depcache = apt_pkg.GetDepCache(cache)
+cache = apt_pkg.Cache()
+depcache = apt_pkg.DepCache(cache)
 
-recs = apt_pkg.GetPkgRecords(cache)
-list = apt_pkg.GetPkgSourceList()
+recs = apt_pkg.PackageRecords(cache)
+list = apt_pkg.SourceList()
 list.ReadMainList()
 
 # show the amount fetch needed for a dist-upgrade
 depcache.Upgrade(True)
 progress = apt.progress.TextFetchProgress()
-fetcher = apt_pkg.GetAcquire(progress)
-pm = apt_pkg.GetPackageManager(depcache)
+fetcher = apt_pkg.Acquire(progress)
+pm = apt_pkg.PackageManager(depcache)
 pm.GetArchives(fetcher, list, recs)
 print "%s (%s)" % (apt_pkg.SizeToStr(fetcher.FetchNeeded), fetcher.FetchNeeded)
-actiongroup = apt_pkg.GetPkgActionGroup(depcache)
+actiongroup = apt_pkg.ActionGroup(depcache)
 for pkg in cache.Packages:
     depcache.MarkKeep(pkg)
 
@@ -48,9 +48,9 @@ pkg = cache["3ddesktop"]
 depcache.MarkInstall(pkg)
 
 progress = apt.progress.TextFetchProgress()
-fetcher = apt_pkg.GetAcquire(progress)
-#fetcher = apt_pkg.GetAcquire()
-pm = apt_pkg.GetPackageManager(depcache)
+fetcher = apt_pkg.Acquire(progress)
+#fetcher = apt_pkg.Acquire()
+pm = apt_pkg.PackageManager(depcache)
 
 print pm
 print fetcher

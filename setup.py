@@ -1,49 +1,62 @@
-#! /usr/bin/env python
+#!/usr/bin/python
+# Builds on python2.X and python3
 # $Id: setup.py,v 1.2 2002/01/08 07:13:21 jgg Exp $
 import glob
 import os
-import shutil
 import sys
 
 from distutils.core import setup, Extension
-from distutils.sysconfig import parse_makefile
-from DistUtilsExtra.command import build_extra, build_i18n
+cmdclass = {}
 
+try:
+    from DistUtilsExtra.command import build_extra, build_i18n
+    from DistUtilsExtra.auto import clean_build_tree
+    cmdclass['build'] = build_extra.build_extra
+    cmdclass['build_i18n'] = build_i18n.build_i18n
+    cmdclass['clean'] = clean_build_tree
+except ImportError:
+    print('W: [python%s] DistUtilsExtra import error.' % sys.version[:3])
 
-# The apt_pkg module
-files = map(lambda source: "python/"+source,
-            parse_makefile("python/makefile")["APT_PKG_SRC"].split())
+try:
+    from sphinx.setup_command import BuildDoc
+    cmdclass['build_sphinx'] = BuildDoc
+except ImportError:
+    print('W: [python%s] Sphinx import error.' % sys.version[:3])
+
+if sys.version_info[0] == 3:
+    from distutils.command.build_py import build_py_2to3
+    cmdclass['build_py'] = build_py_2to3
+
+# The apt_pkg module.
+files = ['apt_pkgmodule.cc', 'acquire.cc', 'cache.cc', 'cdrom.cc',
+         'configuration.cc', 'depcache.cc', 'generic.cc', 'hashes.cc',
+         'hashstring.cc', 'indexfile.cc', 'indexrecords.cc', 'metaindex.cc',
+         'pkgmanager.cc', 'pkgrecords.cc', 'pkgsrcrecords.cc', 'policy.cc',
+         'progress.cc', 'sourcelist.cc', 'string.cc', 'tag.cc',
+         'lock.cc', 'acquire-item.cc', 'python-apt-helpers.cc']
+files = sorted(['python/' + fname for fname in files], key=lambda s: s[:-3])
 apt_pkg = Extension("apt_pkg", files, libraries=["apt-pkg"])
 
 # The apt_inst module
-files = map(lambda source: "python/"+source,
-            parse_makefile("python/makefile")["APT_INST_SRC"].split())
+files = ["python/apt_instmodule.cc", "python/generic.cc", "python/tar.cc",
+         "python/arfile.cc", "python/tarfile.cc"]
 apt_inst = Extension("apt_inst", files, libraries=["apt-pkg", "apt-inst"])
 
 # Replace the leading _ that is used in the templates for translation
-templates = []
-
-# build doc
 if len(sys.argv) > 1 and sys.argv[1] == "build":
     if not os.path.exists("build/data/templates/"):
         os.makedirs("build/data/templates")
     for template in glob.glob('data/templates/*.info.in'):
         source = open(template, "r")
-        build = open(os.path.join("build", template[:-3]), "w")
-        lines = source.readlines()
-        for line in lines:
+        build = open("build/" + template[:-3], "w")
+        for line in source:
             build.write(line.lstrip("_"))
         source.close()
         build.close()
-
-
-if len(sys.argv) > 1 and sys.argv[1] == "clean" and '-a' in sys.argv:
-    for dirname in "build/doc", "doc/build", "build/data", "build/mo":
-        if os.path.exists(dirname):
-            print "Removing", dirname
-            shutil.rmtree(dirname)
-        else:
-            print "Not removing", dirname, "because it does not exist"
+    for template in glob.glob('data/templates/*.mirrors'):
+        import shutil
+        shutil.copy(template, os.path.join("build", template))
+        
 
 setup(name="python-apt",
       description="Python bindings for APT",
@@ -56,15 +69,6 @@ setup(name="python-apt",
                     glob.glob('build/data/templates/*.info')),
                     ('share/python-apt/templates',
                     glob.glob('data/templates/*.mirrors'))],
-      cmdclass = {"build": build_extra.build_extra,
-                  "build_i18n": build_i18n.build_i18n},
+      cmdclass = cmdclass,
       license = 'GNU GPL',
       platforms = 'posix')
-
-if (len(sys.argv) > 1 and sys.argv[1] == "build" and
-    sys.version_info[0] >= 2 and sys.version_info[1] >= 5):
-    import sphinx
-    sphinx.main(["sphinx", "-b", "html", "-d", "build/doc/doctrees",
-                os.path.abspath("doc/source"), "build/doc/html"])
-    sphinx.main(["sphinx", "-b", "text", "-d", "build/doc/doctrees",
-                os.path.abspath("doc/source"), "build/doc/text"])

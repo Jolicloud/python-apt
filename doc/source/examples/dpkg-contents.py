@@ -28,7 +28,7 @@ def format_mode(what, mode):
 
 
 def callback(what, name, link, mode, uid, gid, size, mtime, major, minor):
-    """callback for debExtract"""
+    """callback for deb_extract"""
     s_mode = format_mode(what, mode)
     s_owner = "%s/%s" % (pwd.getpwuid(uid)[0], grp.getgrgid(gid)[0])
     s_size = "%9d" % size
@@ -47,7 +47,7 @@ def main():
 
     fobj = open(sys.argv[1])
     try:
-        apt_inst.debExtract(fobj, callback, "data.tar.gz")
+        apt_inst.deb_extract(fobj, callback, "data.tar.gz")
     finally:
         fobj.close()
 

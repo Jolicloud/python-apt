@@ -5,3 +5,5 @@ aptsources/distro.py
 apt/progress/gtk2.py
 apt/package.py
 apt/debfile.py
+apt/progress/text.py
+apt/cache.py

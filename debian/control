@@ -1,34 +1,29 @@
 Source: python-apt
 Section: python
-Priority: optional
+Priority: standard
 Maintainer: Ubuntu Core Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: APT Development Team <deity@lists.debian.org>
 Uploaders: Michael Vogt <mvo@debian.org>, Julian Andres Klode <jak@debian.org>
-Standards-Version: 3.8.3
+Standards-Version: 3.8.4
 XS-Python-Version: all
 Build-Depends: apt-utils,
                debhelper (>= 7.3.5),
-               libapt-pkg-dev (>= 0.7.20),
+               libapt-pkg-dev (>= 0.7.22~),
                python-all-dbg,
                python-all-dev,
-	       python2.4-dev,
-	       python2.4-dbg,
                python-central (>= 0.5),
-               python-debian,
-               python-distutils-extra (>= 1.9.0),
-               python-gtk2 [!kfreebsd-amd64 !kfreebsd-i386],
-               python-sphinx (>= 0.5),
-               python-vte [!kfreebsd-amd64 !kfreebsd-i386]
-Vcs-Bzr: http://bzr.debian.org/apt/python-apt/debian-sid
-Vcs-Browser: http://bzr.debian.org/loggerhead/apt/python-apt/debian-sid/changes
+               python-distutils-extra (>= 2.0),
+               python-sphinx (>= 0.5)
+Vcs-Bzr: https://code.launchpad.net/~ubuntu-core-dev/python-apt/lucid
+Vcs-Browser: http://bazaar.launchpad.net/~ubuntu-core-dev/python-apt/lucid/files
 
 Package: python-apt
 Architecture: any
 Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, lsb-release
-Recommends: iso-codes, libjs-jquery
+Recommends: iso-codes
 Breaks: debdelta (<< 0.28~), packagekit-backend-apt (<= 0.4.8-0ubuntu4)
 Provides: ${python:Provides}
-Suggests: python-apt-dbg, python-gtk2, python-vte
+Suggests: python-apt-dbg, python-gtk2, python-vte, python-apt-doc
 XB-Python-Version: ${python:Versions}
 Description: Python interface to libapt-pkg
  The apt_pkg Python interface will provide full access to the internal
@@ -43,15 +38,44 @@ Description: Python interface to libapt-pkg
  The included 'aptsources' Python interface provides an abstraction of
  the sources.list configuration on the repository and the distro level.
 
+Package: python-apt-doc
+Priority: optional
+Architecture: all
+Section: doc
+Depends: libjs-jquery, ${misc:Depends}
+Enhances: python-apt
+Replaces: python-apt (<< 0.7.94)
+Description: Python interface to libapt-pkg (API documentation)
+ The apt_pkg Python interface will provide full access to the internal
+ libapt-pkg structures allowing Python programs to easily perform a
+ variety of functions.
+ .
+ This package contains the API documentation of python-apt.
+
 Package: python-apt-dbg
 Priority: extra
 Architecture: any
 Section: debug
 Depends: python-dbg, python-apt (= ${binary:Version}), ${shlibs:Depends},
          ${misc:Depends}
+XB-Python-Version: ${python:Versions}
 Description: Python interface to libapt-pkg (debug extension)
  The apt_pkg Python interface will provide full access to the internal
  libapt-pkg structures allowing Python programs to easily perform a
  variety of functions.
  .
  This package contains the extension built for the Python debug interpreter.
+
+Package: python-apt-dev
+Priority: optional
+Architecture: all
+Depends: python-apt (>= ${source:Version}), libapt-pkg-dev (>= 0.7.10),
+         ${misc:Depends}
+Recommends: python-dev
+Description: Python interface to libapt-pkg (development files)
+ The apt_pkg Python interface will provide full access to the internal
+ libapt-pkg structures allowing Python programs to easily perform a
+ variety of functions.
+ .
+ This package contains the header files needed to use python-apt objects from
+ C++ applications.

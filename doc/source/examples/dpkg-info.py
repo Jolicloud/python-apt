@@ -2,7 +2,7 @@
 """Emulate dpkg --info package.deb control-file"""
 import sys
 
-from apt_inst import debExtractControl
+from apt_inst import deb_extract_control
 
 
 def main():
@@ -12,7 +12,7 @@ def main():
         sys.exit(0)
     fobj = open(sys.argv[1])
     try:
-        print debExtractControl(fobj, sys.argv[2])
+        print deb_extract_control(fobj, sys.argv[2])
     finally:
         fobj.close()
 

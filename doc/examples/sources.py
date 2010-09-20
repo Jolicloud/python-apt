@@ -4,10 +4,10 @@ import apt_pkg
 
 apt_pkg.init()
 
-#cache = apt_pkg.GetCache()
-#sources = apt_pkg.GetPkgSrcRecords(cache)
+#cache = apt_pkg.Cache()
+#sources = apt_pkg.SourceRecords(cache)
 
-sources = apt_pkg.GetPkgSrcRecords()
+sources = apt_pkg.SourceRecords()
 sources.Restart()
 while sources.Lookup('hello'):
     print sources.Package, sources.Version, sources.Maintainer, \

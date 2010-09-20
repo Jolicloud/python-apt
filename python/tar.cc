@@ -4,10 +4,13 @@
 /* ######################################################################
 
    Tar Inteface
+   * THIS FILE IS COMPLETELY DEPRECATED, AND NOT USED ANYMORE IF BUILT *
+   * WITHOUT COMPATIBILITY. *
 
    ##################################################################### */
 									/*}}}*/
 // Include Files							/*{{{*/
+#ifdef COMPAT_0_7
 #include "generic.h"
 
 #include <apt-pkg/extracttar.h>
@@ -72,7 +75,11 @@ bool ProcessTar::DoItem(Item &Itm,int &Fd)
       case Item::FIFO:
       Type = "FIFO";
       break;
+
+      default:
+      return false;
    }
+
 
    if (PyObject_CallFunction(Function,"sssiiiiiii",Type,Itm.Name,
 			     Itm.LinkTarget,Itm.Mode,Itm.UID,Itm.GID,Itm.Size,
@@ -97,8 +104,7 @@ PyObject *tarExtract(PyObject *Self,PyObject *Args)
    PyObject *Function;
    char *Comp;
 
-   if (PyArg_ParseTuple(Args,"O!Os",&PyFile_Type,&File,
-			&Function,&Comp) == 0)
+   if (PyArg_ParseTuple(Args,"OOs",&File, &Function,&Comp) == 0)
       return 0;
 
    if (PyCallable_Check(Function) == 0)
@@ -109,7 +115,11 @@ PyObject *tarExtract(PyObject *Self,PyObject *Args)
 
    {
       // Open the file and associate the tar
-      FileFd Fd(fileno(PyFile_AsFile(File)),false);
+      int fileno = PyObject_AsFileDescriptor(File);
+      if (fileno == -1)
+        return 0;
+
+      FileFd Fd(fileno,false);
       ExtractTar Tar(Fd,0xFFFFFFFF,Comp);
       if (_error->PendingError() == true)
 	 return HandleErrors();
@@ -139,8 +149,7 @@ PyObject *debExtract(PyObject *Self,PyObject *Args)
    char *Chunk;
    const char *Comp = "gzip";
 
-   if (PyArg_ParseTuple(Args,"O!Os",&PyFile_Type,&File,
-			&Function,&Chunk) == 0)
+   if (PyArg_ParseTuple(Args,"OOs",&File,&Function,&Chunk) == 0)
       return 0;
 
    if (PyCallable_Check(Function) == 0)
@@ -149,10 +158,13 @@ PyObject *debExtract(PyObject *Self,PyObject *Args)
       return 0;
    }
 
+   int fileno = PyObject_AsFileDescriptor(File);
+   if (fileno == -1)
+      return 0;
    {
       // Open the file and associate the tar
       // Open the file and associate the .deb
-      FileFd Fd(fileno(PyFile_AsFile(File)),false);
+      FileFd Fd(fileno,false);
       debDebFile Deb(Fd);
       if (_error->PendingError() == true)
 	 return HandleErrors();
@@ -180,3 +192,4 @@ PyObject *debExtract(PyObject *Self,PyObject *Args)
    return HandleErrors(Py_None);
 }
 									/*}}}*/
+#endif // defined(COMPAT_0_7)

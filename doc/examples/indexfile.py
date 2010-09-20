@@ -4,11 +4,11 @@ import apt_pkg
 
 apt_pkg.init()
 
-sources = apt_pkg.GetPkgSourceList()
+sources = apt_pkg.SourceList()
 sources.ReadMainList()
 
-cache = apt_pkg.GetCache()
-depcache = apt_pkg.GetDepCache(cache)
+cache = apt_pkg.Cache()
+depcache = apt_pkg.DepCache(cache)
 pkg = cache["libimlib2"]
 cand = depcache.GetCandidateVer(pkg)
 for (f, i) in cand.FileList:

@@ -3,24 +3,28 @@
 import unittest
 import os
 import copy
-import sys
 
-sys.path.insert(0, "../")
 import apt_pkg
-import aptsources
 import aptsources.sourceslist
 import aptsources.distro
 
 
 class TestAptSources(unittest.TestCase):
 
-    def __init__(self, methodName):
-        unittest.TestCase.__init__(self, methodName)
-        apt_pkg.init()
-        apt_pkg.Config.Set("Dir::Etc", os.getcwd())
-        apt_pkg.Config.Set("Dir::Etc::sourceparts", "/xxx")
+    def setUp(self):
+        apt_pkg.init_config()
+        apt_pkg.init_system()
+        if apt_pkg.config["APT::Architecture"] not in ('i386', 'amd64'):
+            apt_pkg.config.set("APT::Architecture", "i386")
+        apt_pkg.config.set("Dir::Etc", os.getcwd())
+        apt_pkg.config.set("Dir::Etc::sourceparts", "/xxx")
+        if os.path.exists("../build/data/templates"):
+            self.templates = os.path.abspath("../build/data/templates")
+        else:
+            self.templates = "/usr/share/python-apt/templates/"
 
     def testIsMirror(self):
+        """aptsources: Test mirror detection."""
         yes = aptsources.sourceslist.is_mirror("http://archive.ubuntu.com",
                                                "http://de.archive.ubuntu.com")
         no = aptsources.sourceslist.is_mirror("http://archive.ubuntu.com",
@@ -29,17 +33,21 @@ class TestAptSources(unittest.TestCase):
         self.assertFalse(no)
 
     def testSourcesListReading(self):
-        apt_pkg.Config.Set("Dir::Etc::sourcelist", "data/sources.list")
-        sources = aptsources.sourceslist.SourcesList()
+        """aptsources: Test sources.list parsing."""
+        apt_pkg.config.set("Dir::Etc::sourcelist", "data/aptsources/"
+                                                   "sources.list")
+        sources = aptsources.sourceslist.SourcesList(True, self.templates)
         self.assertEqual(len(sources.list), 6)
         # test load
         sources.list = []
-        sources.load("data/sources.list")
+        sources.load("data/aptsources/sources.list")
         self.assertEqual(len(sources.list), 6)
 
     def testSourcesListAdding(self):
-        apt_pkg.Config.Set("Dir::Etc::sourcelist", "data/sources.list")
-        sources = aptsources.sourceslist.SourcesList()
+        """aptsources: Test additions to sources.list"""
+        apt_pkg.config.set("Dir::Etc::sourcelist", "data/aptsources/"
+                                                   "sources.list")
+        sources = aptsources.sourceslist.SourcesList(True, self.templates)
         # test to add something that is already there (main)
         before = copy.deepcopy(sources)
         sources.add("deb", "http://de.archive.ubuntu.com/ubuntu/",
@@ -86,9 +94,10 @@ class TestAptSources(unittest.TestCase):
         self.assertEqual(found_universe, 1)
 
     def testMatcher(self):
-        apt_pkg.Config.Set("Dir::Etc::sourcelist", "data/sources.list.test"
-                                                   "Distribution")
-        sources = aptsources.sourceslist.SourcesList()
+        """aptsources: Test matcher"""
+        apt_pkg.config.set("Dir::Etc::sourcelist", "data/aptsources/"
+                           "sources.list.testDistribution")
+        sources = aptsources.sourceslist.SourcesList(True, self.templates)
         distro = aptsources.distro.get_distro()
         distro.get_sources(sources)
         # test if all suits of the current distro were detected correctly
@@ -98,9 +107,10 @@ class TestAptSources(unittest.TestCase):
                 self.fail("source entry '%s' has no matcher" % s)
 
     def testDistribution(self):
-        apt_pkg.Config.Set("Dir::Etc::sourcelist", "data/sources.list.test"
-                                                   "Distribution")
-        sources = aptsources.sourceslist.SourcesList()
+        """aptsources: Test distribution detection."""
+        apt_pkg.config.set("Dir::Etc::sourcelist", "data/aptsources/"
+                           "sources.list.testDistribution")
+        sources = aptsources.sourceslist.SourcesList(True, self.templates)
         distro = aptsources.distro.get_distro()
         distro.get_sources(sources)
         # test if all suits of the current distro were detected correctly
@@ -148,4 +158,5 @@ class TestAptSources(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    os.chdir(os.path.dirname(__file__))
     unittest.main()

@@ -17,7 +17,7 @@ def main():
 
     fobj = open(sys.argv[1])
     try:
-        apt_inst.debExtractArchive(fobj, sys.argv[2])
+        apt_inst.deb_extract_archive(fobj, sys.argv[2])
     finally:
         fobj.close()
 

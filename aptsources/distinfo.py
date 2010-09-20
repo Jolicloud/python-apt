@@ -21,9 +21,11 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 #  USA
 
+import errno
 import os
 import gettext
 from os import getenv
+from subprocess import Popen, PIPE
 import ConfigParser
 import re
 
@@ -34,7 +36,7 @@ def _(s):
     return gettext.dgettext("python-apt", s)
 
 
-class Template:
+class Template(object):
 
     def __init__(self):
         self.name = None
@@ -64,7 +66,7 @@ class Template:
             return False
 
 
-class Component:
+class Component(object):
 
     def __init__(self, name, desc=None, long_desc=None):
         self.name = name
@@ -89,7 +91,7 @@ class Component:
         return self.description_long
 
 
-class Mirror:
+class Mirror(object):
     ''' Storage for mirror related information '''
 
     def __init__(self, proto, hostname, dir, location=None):
@@ -122,7 +124,7 @@ class Mirror:
         self.location = location
 
 
-class Repository:
+class Repository(object):
 
     def __init__(self, proto, dir):
         self.proto = proto
@@ -137,18 +139,20 @@ class Repository:
 
 def split_url(url):
     ''' split a given URL into the protocoll, the hostname and the dir part '''
-    return map(lambda a, b: a, re.split(":*\/+", url, maxsplit=2),
-               [None, None, None])
+    split = re.split(":*\/+", url, maxsplit=2)
+    while len(split) < 3:
+        split.append(None)
+    return split
 
 
-class DistInfo:
+class DistInfo(object):
 
     def __init__(self,
                  dist = None,
                  base_dir = "/usr/share/python-apt/templates"):
         self.metarelease_uri = ''
         self.templates = []
-        self.arch = apt_pkg.Config.Find("APT::Architecture")
+        self.arch = apt_pkg.config.find("APT::Architecture")
 
         location = None
         match_loc = re.compile(r"^#LOC:(.+)$")
@@ -158,10 +162,13 @@ class DistInfo:
         #match_mirror_line = re.compile(r".+")
 
         if not dist:
-            pipe = os.popen("lsb_release -i -s")
-            dist = pipe.read().strip()
-            pipe.close()
-            del pipe
+            try:
+                dist = Popen(["lsb_release", "-i", "-s"],
+                             stdout=PIPE).communicate()[0].strip()
+            except OSError, exc:
+                if exc.errno != errno.ENOENT:
+                    print 'WARNING: lsb_release failed, using defaults:', exc
+                dist = "Debian"
 
         self.dist = dist
 
@@ -213,6 +220,9 @@ class DistInfo:
                 template.match_uri = value
             elif (field == 'MirrorsFile' or
                   field == 'MirrorsFile-%s' % self.arch):
+                # Make the path absolute.
+                value = os.path.isabs(value) and value or \
+                        os.path.abspath(os.path.join(base_dir, value))
                 if value not in map_mirror_sets:
                     mirror_set = {}
                     try:

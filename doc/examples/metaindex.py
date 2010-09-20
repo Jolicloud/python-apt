@@ -4,7 +4,7 @@ import apt_pkg
 
 apt_pkg.init()
 
-sources = apt_pkg.GetPkgSourceList()
+sources = apt_pkg.SourceList()
 sources.ReadMainList()
 
 

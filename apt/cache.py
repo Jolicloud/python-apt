@@ -24,7 +24,10 @@ import weakref
 
 import apt_pkg
 from apt import Package
-import apt.progress
+from apt_pkg import gettext as _
+from apt.deprecation import (AttributeDeprecatedBy, function_deprecated_by,
+                             deprecated_args)
+import apt.progress.text
 
 
 class FetchCancelledException(IOError):
@@ -43,32 +46,43 @@ class Cache(object):
     """Dictionary-like package cache.
 
     This class has all the packages that are available in it's
-    dictionary
+    dictionary.
+
+    Keyword arguments:
+    progress -- a OpProgress object
+    rootdir -- a alternative root directory. if that is given
+               the system sources.list and system lists/ files are
+               not read, only files relative to the given rootdir
+    memonly -- build the cache in memory only
     """
 
     def __init__(self, progress=None, rootdir=None, memonly=False):
+        self._cache = None
+        self._depcache = None
+        self._records = None
+        self._list = None
         self._callbacks = {}
         self._weakref = weakref.WeakValueDictionary()
         self._set = set()
         if memonly:
             # force apt to build its caches in memory
-            apt_pkg.Config.Set("Dir::Cache::pkgcache", "")
+            apt_pkg.config.set("Dir::Cache::pkgcache", "")
         if rootdir:
             if os.path.exists(rootdir+"/etc/apt/apt.conf"):
-                apt_pkg.ReadConfigFile(apt_pkg.Config,
+                apt_pkg.read_config_file(apt_pkg.config,
                                        rootdir + "/etc/apt/apt.conf")
             if os.path.isdir(rootdir+"/etc/apt/apt.conf.d"):
-                apt_pkg.ReadConfigDir(apt_pkg.Config,
+                apt_pkg.read_config_dir(apt_pkg.config,
                                       rootdir + "/etc/apt/apt.conf.d")
-            apt_pkg.Config.Set("Dir", rootdir)
-            apt_pkg.Config.Set("Dir::State::status",
+            apt_pkg.config.set("Dir", rootdir)
+            apt_pkg.config.set("Dir::State::status",
                                rootdir + "/var/lib/dpkg/status")
             # create required dirs/files when run with special rootdir
             # automatically
             self._check_and_create_required_dirs(rootdir)
             # Call InitSystem so the change to Dir::State::Status is actually
             # recognized (LP: #320665)
-            apt_pkg.InitSystem()
+            apt_pkg.init_system()
         self.open(progress)
 
     def _check_and_create_required_dirs(self, rootdir):
@@ -85,14 +99,14 @@ class Cache(object):
                 "/var/lib/apt/lists/partial",
                ]
         for d in dirs:
-            if not os.path.exists(rootdir+d):
-                print "creating: ",rootdir+d
-                os.makedirs(rootdir+d)
+            if not os.path.exists(rootdir + d):
+                print "creating: ", rootdir + d
+                os.makedirs(rootdir + d)
         for f in files:
-            if not os.path.exists(rootdir+f):
-                open(rootdir+f,"w")
+            if not os.path.exists(rootdir + f):
+                open(rootdir + f, "w")
 
-    def _runCallbacks(self, name):
+    def _run_callbacks(self, name):
         """ internal helper to run a callback """
         if name in self._callbacks:
             for callback in self._callbacks[name]:
@@ -103,31 +117,32 @@ class Cache(object):
             a dictionary
         """
         if progress is None:
-            progress = apt.progress.OpProgress()
-        self._runCallbacks("cache_pre_open")
-        self._cache = apt_pkg.GetCache(progress)
-        self._depcache = apt_pkg.GetDepCache(self._cache)
-        self._records = apt_pkg.GetPkgRecords(self._cache)
-        self._list = apt_pkg.GetPkgSourceList()
-        self._list.ReadMainList()
+            progress = apt.progress.base.OpProgress()
+        self._run_callbacks("cache_pre_open")
+
+        self._cache = apt_pkg.Cache(progress)
+        self._depcache = apt_pkg.DepCache(self._cache)
+        self._records = apt_pkg.PackageRecords(self._cache)
+        self._list = apt_pkg.SourceList()
+        self._list.read_main_list()
         self._set.clear()
         self._weakref.clear()
 
-        progress.Op = "Building data structures"
-        i=last=0
-        size=len(self._cache.Packages)
-        for pkg in self._cache.Packages:
+        progress.op = _("Building data structures")
+        i = last = 0
+        size = len(self._cache.packages)
+        for pkg in self._cache.packages:
             if progress is not None and last+100 < i:
                 progress.update(i/float(size)*100)
-                last=i
+                last = i
             # drop stuff with no versions (cruft)
-            if len(pkg.VersionList) > 0:
-                self._set.add(pkg.Name)
+            if len(pkg.version_list) > 0:
+                self._set.add(pkg.name)
 
             i += 1
 
         progress.done()
-        self._runCallbacks("cache_post_open")
+        self._run_callbacks("cache_post_open")
 
     def __getitem__(self, key):
         """ look like a dictionary (get key) """
@@ -158,97 +173,105 @@ class Cache(object):
     def keys(self):
         return list(self._set)
 
-    def getChanges(self):
+    def get_changes(self):
         """ Get the marked changes """
         changes = []
-        for p in self:
-            if p.markedUpgrade or p.markedInstall or p.markedDelete or \
-               p.markedDowngrade or p.markedReinstall:
-                changes.append(p)
+        for pkg in self:
+            if (pkg.marked_upgrade or pkg.marked_install or pkg.marked_delete
+                or pkg.marked_downgrade or pkg.marked_reinstall):
+                changes.append(pkg)
         return changes
 
-    def upgrade(self, distUpgrade=False):
-        """ Upgrade the all package, DistUpgrade will also install
-            new dependencies
+    @deprecated_args
+    def upgrade(self, dist_upgrade=False):
+        """Upgrade all packages.
+
+        If the parameter *dist_upgrade* is True, new dependencies will be
+        installed as well (and conflicting packages may be removed). The
+        default value is False.
         """
-        self.cachePreChange()
-        self._depcache.Upgrade(distUpgrade)
-        self.cachePostChange()
+        self.cache_pre_change()
+        self._depcache.upgrade(dist_upgrade)
+        self.cache_post_change()
 
     @property
-    def requiredDownload(self):
+    def required_download(self):
         """Get the size of the packages that are required to download."""
-        pm = apt_pkg.GetPackageManager(self._depcache)
-        fetcher = apt_pkg.GetAcquire()
-        pm.GetArchives(fetcher, self._list, self._records)
-        return fetcher.FetchNeeded
+        pm = apt_pkg.PackageManager(self._depcache)
+        fetcher = apt_pkg.Acquire()
+        pm.get_archives(fetcher, self._list, self._records)
+        return fetcher.fetch_needed
 
     @property
-    def additionalRequiredSpace(self):
+    def required_space(self):
         """Get the size of the additional required space on the fs."""
-        return self._depcache.UsrSize
+        return self._depcache.usr_size
 
     @property
-    def reqReinstallPkgs(self):
+    def req_reinstall_pkgs(self):
         """Return the packages not downloadable packages in reqreinst state."""
         reqreinst = set()
         for pkg in self:
             if (not pkg.candidate.downloadable and
-                (pkg._pkg.InstState == apt_pkg.InstStateReInstReq or
-                 pkg._pkg.InstState == apt_pkg.InstStateHoldReInstReq)):
+                (pkg._pkg.inst_state == apt_pkg.INSTSTATE_REINSTREQ or
+                 pkg._pkg.inst_state == apt_pkg.INSTSTATE_HOLD_REINSTREQ)):
                 reqreinst.add(pkg.name)
         return reqreinst
 
-    def _runFetcher(self, fetcher):
+    def _run_fetcher(self, fetcher):
         # do the actual fetching
-        res = fetcher.Run()
+        res = fetcher.run()
 
         # now check the result (this is the code from apt-get.cc)
         failed = False
         transient = False
-        errMsg = ""
-        for item in fetcher.Items:
-            if item.Status == item.StatDone:
+        err_msg = ""
+        for item in fetcher.items:
+            if item.status == item.STAT_DONE:
                 continue
-            if item.StatIdle:
+            if item.STAT_IDLE:
                 transient = True
                 continue
-            errMsg += "Failed to fetch %s %s\n" % (item.DescURI,
-                                                   item.ErrorText)
+            err_msg += "Failed to fetch %s %s\n" % (item.desc_uri,
+                                                   item.error_text)
             failed = True
 
         # we raise a exception if the download failed or it was cancelt
-        if res == fetcher.ResultCancelled:
-            raise FetchCancelledException(errMsg)
+        if res == fetcher.RESULT_CANCELLED:
+            raise FetchCancelledException(err_msg)
         elif failed:
-            raise FetchFailedException(errMsg)
+            raise FetchFailedException(err_msg)
         return res
 
-    def _fetchArchives(self, fetcher, pm):
+    def _fetch_archives(self, fetcher, pm):
         """ fetch the needed archives """
 
         # get lock
-        lockfile = apt_pkg.Config.FindDir("Dir::Cache::Archives") + "lock"
-        lock = apt_pkg.GetLock(lockfile)
+        lockfile = apt_pkg.config.find_dir("Dir::Cache::Archives") + "lock"
+        lock = apt_pkg.get_lock(lockfile)
         if lock < 0:
             raise LockFailedException("Failed to lock %s" % lockfile)
 
         try:
             # this may as well throw a SystemError exception
-            if not pm.GetArchives(fetcher, self._list, self._records):
+            if not pm.get_archives(fetcher, self._list, self._records):
                 return False
             # now run the fetcher, throw exception if something fails to be
             # fetched
-            return self._runFetcher(fetcher)
+            return self._run_fetcher(fetcher)
         finally:
             os.close(lock)
 
-    def isVirtualPackage(self, pkgname):
+    def is_virtual_package(self, pkgname):
         """Return whether the package is a virtual package."""
-        pkg = self._cache[pkgname]
-        return bool(pkg.ProvidesList and not pkg.VersionList)
+        try:
+            pkg = self._cache[pkgname]
+        except KeyError:
+            return False
+        else:
+            return bool(pkg.provides_list and not pkg.version_list)
 
-    def getProvidingPackages(self, virtual):
+    def get_providing_packages(self, virtual):
         """
         Return a list of packages which provide the virtual package of the
         specified name
@@ -256,42 +279,82 @@ class Cache(object):
         providers = []
         try:
             vp = self._cache[virtual]
-            if len(vp.VersionList) != 0:
+            if len(vp.version_list) != 0:
                 return providers
         except KeyError:
             return providers
         for pkg in self:
-            v = self._depcache.GetCandidateVer(pkg._pkg)
+            v = self._depcache.get_candidate_ver(pkg._pkg)
             if v is None:
                 continue
-            for p in v.ProvidesList:
+            for p in v.provides_list:
                 if virtual == p[0]:
                     # we found a pkg that provides this virtual pkg
                     providers.append(pkg)
         return providers
 
-    def update(self, fetchProgress=None, pulseInterval=0):
-        " run the equivalent of apt-get update "
-        lockfile = apt_pkg.Config.FindDir("Dir::State::Lists") + "lock"
-        lock = apt_pkg.GetLock(lockfile)
+    @deprecated_args
+    def update(self, fetch_progress=None, pulse_interval=0,
+               raise_on_error=True):
+        """Run the equivalent of apt-get update.
+
+        The first parameter *fetch_progress* may be set to an instance of
+        apt.progress.FetchProgress, the default is apt.progress.FetchProgress()
+        .
+        """
+        lockfile = apt_pkg.config.find_dir("Dir::State::Lists") + "lock"
+        lock = apt_pkg.get_lock(lockfile)
+
         if lock < 0:
             raise LockFailedException("Failed to lock %s" % lockfile)
 
         try:
-            if fetchProgress is None:
-                fetchProgress = apt.progress.FetchProgress()
-            return self._cache.Update(fetchProgress, self._list, pulseInterval)
+            if fetch_progress is None:
+                fetch_progress = apt.progress.base.AcquireProgress()
+            try:
+                res = self._cache.update(fetch_progress, self._list,
+                                         pulse_interval)
+            except SystemError, e:
+                raise FetchFailedException(e)
+            if not res and raise_on_error:
+                raise FetchFailedException()
+            else:
+                return res
         finally:
             os.close(lock)
 
-    def installArchives(self, pm, installProgress):
-        installProgress.startUpdate()
-        res = installProgress.run(pm)
-        installProgress.finishUpdate()
+    @deprecated_args
+    def install_archives(self, pm, install_progress):
+        """
+        The first parameter *pm* refers to an object returned by
+        apt_pkg.PackageManager().
+
+        The second parameter *install_progress* refers to an InstallProgress()
+        object of the module apt.progress.
+        """
+        # compat with older API
+        try:
+            install_progress.startUpdate()
+        except AttributeError:
+            install_progress.start_update()
+        res = install_progress.run(pm)
+        try:
+            install_progress.finishUpdate()
+        except AttributeError:
+            install_progress.finish_update()
         return res
 
-    def commit(self, fetchProgress=None, installProgress=None):
-        """ Apply the marked changes to the cache """
+    @deprecated_args
+    def commit(self, fetch_progress=None, install_progress=None):
+        """Apply the marked changes to the cache.
+
+        The first parameter, *fetch_progress*, refers to a FetchProgress()
+        object as found in apt.progress, the default being
+        apt.progress.FetchProgress().
+
+        The second parameter, *install_progress*, is a
+        apt.progress.InstallProgress() object.
+        """
         # FIXME:
         # use the new acquire/pkgmanager interface here,
         # raise exceptions when a download or install fails
@@ -299,54 +362,46 @@ class Cache(object):
         # Current a failed download will just display "error"
         # which is less than optimal!
 
-        if fetchProgress is None:
-            fetchProgress = apt.progress.FetchProgress()
-        if installProgress is None:
-            installProgress = apt.progress.InstallProgress()
+        if fetch_progress is None:
+            fetch_progress = apt.progress.base.AcquireProgress()
+        if install_progress is None:
+            install_progress = apt.progress.base.InstallProgress()
 
-        pm = apt_pkg.GetPackageManager(self._depcache)
-        fetcher = apt_pkg.GetAcquire(fetchProgress)
+        pm = apt_pkg.PackageManager(self._depcache)
+        fetcher = apt_pkg.Acquire(fetch_progress)
         while True:
             # fetch archives first
-            res = self._fetchArchives(fetcher, pm)
+            res = self._fetch_archives(fetcher, pm)
 
             # then install
-            res = self.installArchives(pm, installProgress)
-            if res == pm.ResultCompleted:
+            res = self.install_archives(pm, install_progress)
+            if res == pm.RESULT_COMPLETED:
                 break
-            elif res == pm.ResultFailed:
+            elif res == pm.RESULT_FAILED:
                 raise SystemError("installArchives() failed")
-            elif res == pm.ResultIncomplete:
-                 pass
+            elif res == pm.RESULT_INCOMPLETE:
+                pass
             else:
-                 raise SystemError("internal-error: unknown result code from InstallArchives: %s" % res)
+                raise SystemError("internal-error: unknown result code "
+                                  "from InstallArchives: %s" % res)
             # reload the fetcher for media swaping
-            fetcher.Shutdown()
-        return (res == pm.ResultCompleted)
+            fetcher.shutdown()
+        return (res == pm.RESULT_COMPLETED)
 
     def clear(self):
         """ Unmark all changes """
-        self._depcache.Init()
+        self._depcache.init()
 
     # cache changes
 
-    def cachePostChange(self):
+    def cache_post_change(self):
         " called internally if the cache has changed, emit a signal then "
-        self._runCallbacks("cache_post_change")
+        self._run_callbacks("cache_post_change")
 
-    def cachePreChange(self):
+    def cache_pre_change(self):
         """ called internally if the cache is about to change, emit
             a signal then """
-        self._runCallbacks("cache_pre_change")
-
-    def actiongroup(self):
-        """Return an ActionGroup() object for the current cache.
-
-        Action groups can be used to speedup actions. The action group is
-        active as soon as it is created, and disabled when the object is
-        deleted or when release() is called.
-        """
-        return apt_pkg.GetPkgActionGroup(self._depcache)
+        self._run_callbacks("cache_pre_change")
 
     def connect(self, name, callback):
         """ connect to a signal, currently only used for
@@ -355,25 +410,60 @@ class Cache(object):
             self._callbacks[name] = []
         self._callbacks[name].append(callback)
 
+    def actiongroup(self):
+        """Return an ActionGroup() object for the current cache.
+
+        Action groups can be used to speedup actions. The action group is
+        active as soon as it is created, and disabled when the object is
+        deleted or when release() is called.
+
+        You can use the action group as a context manager, this is the
+        recommended way::
+
+            with cache.actiongroup():
+                for package in my_selected_packages:
+                    package.mark_install()
+
+        This way, the ActionGroup is automatically released as soon as the
+        with statement block is left. It also has the benefit of making it
+        clear which parts of the code run with a action group and which
+        don't.
+        """
+        return apt_pkg.ActionGroup(self._depcache)
+
     @property
     def broken_count(self):
         """Return the number of packages with broken dependencies."""
-        return self._depcache.BrokenCount
+        return self._depcache.broken_count
 
     @property
     def delete_count(self):
         """Return the number of packages marked for deletion."""
-        return self._depcache.DelCount
+        return self._depcache.del_count
 
     @property
     def install_count(self):
         """Return the number of packages marked for installation."""
-        return self._depcache.InstCount
+        return self._depcache.inst_count
 
     @property
     def keep_count(self):
         """Return the number of packages marked as keep."""
-        return self._depcache.KeepCount
+        return self._depcache.keep_count
+
+    if apt_pkg._COMPAT_0_7:
+        _runCallbacks = function_deprecated_by(_run_callbacks)
+        getChanges = function_deprecated_by(get_changes)
+        requiredDownload = AttributeDeprecatedBy('required_download')
+        additionalRequiredSpace = AttributeDeprecatedBy('required_space')
+        reqReinstallPkgs = AttributeDeprecatedBy('req_reinstall_pkgs')
+        _runFetcher = function_deprecated_by(_run_fetcher)
+        _fetchArchives = function_deprecated_by(_fetch_archives)
+        isVirtualPackage = function_deprecated_by(is_virtual_package)
+        getProvidingPackages = function_deprecated_by(get_providing_packages)
+        installArchives = function_deprecated_by(install_archives)
+        cachePostChange = function_deprecated_by(cache_post_change)
+        cachePreChange = function_deprecated_by(cache_pre_change)
 
 
 class ProblemResolver(object):
@@ -383,31 +473,31 @@ class ProblemResolver(object):
     """
 
     def __init__(self, cache):
-        self._resolver = apt_pkg.GetPkgProblemResolver(cache._depcache)
+        self._resolver = apt_pkg.ProblemResolver(cache._depcache)
 
     def clear(self, package):
         """Reset the package to the default state."""
-        self._resolver.Clear(package._pkg)
+        self._resolver.clear(package._pkg)
 
     def install_protect(self):
         """mark protected packages for install or removal."""
-        self._resolver.InstallProtect()
+        self._resolver.install_protect()
 
     def protect(self, package):
         """Protect a package so it won't be removed."""
-        self._resolver.Protect(package._pkg)
+        self._resolver.protect(package._pkg)
 
     def remove(self, package):
         """Mark a package for removal."""
-        self._resolver.Remove(package._pkg)
+        self._resolver.remove(package._pkg)
 
     def resolve(self):
         """Resolve dependencies, try to remove packages where needed."""
-        self._resolver.Resolve()
+        self._resolver.resolve()
 
     def resolve_by_keep(self):
         """Resolve dependencies, do not try to remove packages."""
-        self._resolver.ResolveByKeep()
+        self._resolver.resolve_by_keep()
 
 
 # ----------------------------- experimental interface
@@ -427,7 +517,7 @@ class MarkedChangesFilter(Filter):
     """ Filter that returns all marked changes """
 
     def apply(self, pkg):
-        if pkg.markedInstall or pkg.markedDelete or pkg.markedUpgrade:
+        if pkg.marked_install or pkg.marked_delete or pkg.marked_upgrade:
             return True
         else:
             return False
@@ -444,8 +534,8 @@ class FilteredCache(object):
             self.cache = Cache(progress)
         else:
             self.cache = cache
-        self.cache.connect("cache_post_change", self.filterCachePostChange)
-        self.cache.connect("cache_post_open", self.filterCachePostChange)
+        self.cache.connect("cache_post_change", self.filter_cache_post_change)
+        self.cache.connect("cache_post_open", self.filter_cache_post_change)
         self._filtered = {}
         self._filters = []
 
@@ -468,7 +558,7 @@ class FilteredCache(object):
     def __contains__(self, key):
         return (key in self._filtered)
 
-    def _reapplyFilter(self):
+    def _reapply_filter(self):
         " internal helper to refilter "
         self._filtered = {}
         for pkg in self.cache:
@@ -477,18 +567,19 @@ class FilteredCache(object):
                     self._filtered[pkg.name] = 1
                     break
 
-    def setFilter(self, filter):
+    def set_filter(self, filter):
         """Set the current active filter."""
         self._filters = []
         self._filters.append(filter)
         #self._reapplyFilter()
         # force a cache-change event that will result in a refiltering
-        self.cache.cachePostChange()
+        self.cache.cache_post_change()
 
-    def filterCachePostChange(self):
+    def filter_cache_post_change(self):
         """Called internally if the cache changes, emit a signal then."""
         #print "filterCachePostChange()"
-        self._reapplyFilter()
+        self._reapply_filter()
+
 
 #    def connect(self, name, callback):
 #        self.cache.connect(name, callback)
@@ -497,6 +588,12 @@ class FilteredCache(object):
         """we try to look exactly like a real cache."""
         #print "getattr: %s " % key
         return getattr(self.cache, key)
+
+    if apt_pkg._COMPAT_0_7:
+        _reapplyFilter = function_deprecated_by(_reapply_filter)
+        setFilter = function_deprecated_by(set_filter)
+        filterCachePostChange = function_deprecated_by(\
+                                                    filter_cache_post_change)
 
 
 def cache_pre_changed():
@@ -507,61 +604,61 @@ def cache_post_changed():
     print "cache post changed"
 
 
-# internal test code
-if __name__ == "__main__":
+def _test():
+    """Internal test code."""
     print "Cache self test"
     apt_pkg.init()
-    c = Cache(apt.progress.OpTextProgress())
-    c.connect("cache_pre_change", cache_pre_changed)
-    c.connect("cache_post_change", cache_post_changed)
-    print ("aptitude" in c)
-    p = c["aptitude"]
-    print p.name
-    print len(c)
+    cache = Cache(apt.progress.text.OpProgress())
+    cache.connect("cache_pre_change", cache_pre_changed)
+    cache.connect("cache_post_change", cache_post_changed)
+    print ("aptitude" in cache)
+    pkg = cache["aptitude"]
+    print pkg.name
+    print len(cache)
 
-    for pkg in c.keys():
-        x= c[pkg].name
+    for pkgname in cache.keys():
+        assert cache[pkgname].name == pkgname
 
-    c.upgrade()
-    changes = c.getChanges()
+    cache.upgrade()
+    changes = cache.get_changes()
     print len(changes)
-    for p in changes:
-        #print p.name
-        x = p.name
+    for pkg in changes:
+        assert pkg.name
+
 
 
     # see if fetching works
-    for d in ["/tmp/pytest", "/tmp/pytest/partial"]:
-        if not os.path.exists(d):
-            os.mkdir(d)
-    apt_pkg.Config.Set("Dir::Cache::Archives", "/tmp/pytest")
-    pm = apt_pkg.GetPackageManager(c._depcache)
-    fetcher = apt_pkg.GetAcquire(apt.progress.TextFetchProgress())
-    c._fetchArchives(fetcher, pm)
+    for dirname in ["/tmp/pytest", "/tmp/pytest/partial"]:
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+    apt_pkg.config.set("Dir::Cache::Archives", "/tmp/pytest")
+    pm = apt_pkg.PackageManager(cache._depcache)
+    fetcher = apt_pkg.Acquire(apt.progress.text.AcquireProgress())
+    cache._fetch_archives(fetcher, pm)
     #sys.exit(1)
 
     print "Testing filtered cache (argument is old cache)"
-    f = FilteredCache(c)
-    f.cache.connect("cache_pre_change", cache_pre_changed)
-    f.cache.connect("cache_post_change", cache_post_changed)
-    f.cache.upgrade()
-    f.setFilter(MarkedChangesFilter())
-    print len(f)
-    for pkg in f.keys():
-        #print c[pkg].name
-        x = f[pkg].name
+    filtered = FilteredCache(cache)
+    filtered.cache.connect("cache_pre_change", cache_pre_changed)
+    filtered.cache.connect("cache_post_change", cache_post_changed)
+    filtered.cache.upgrade()
+    filtered.set_filter(MarkedChangesFilter())
+    print len(filtered)
+    for pkgname in filtered.keys():
+        assert pkgname == filtered[pkg].name
 
-    print len(f)
+    print len(filtered)
 
     print "Testing filtered cache (no argument)"
-    f = FilteredCache(progress=apt.progress.OpTextProgress())
-    f.cache.connect("cache_pre_change", cache_pre_changed)
-    f.cache.connect("cache_post_change", cache_post_changed)
-    f.cache.upgrade()
-    f.setFilter(MarkedChangesFilter())
-    print len(f)
-    for pkg in f.keys():
-        #print c[pkg].name
-        x = f[pkg].name
+    filtered = FilteredCache(progress=apt.progress.base.OpProgress())
+    filtered.cache.connect("cache_pre_change", cache_pre_changed)
+    filtered.cache.connect("cache_post_change", cache_post_changed)
+    filtered.cache.upgrade()
+    filtered.set_filter(MarkedChangesFilter())
+    print len(filtered)
+    for pkgname in filtered.keys():
+        assert pkgname == filtered[pkgname].name
 
-    print len(f)
+    print len(filtered)
+if __name__ == '__main__':
+    _test()

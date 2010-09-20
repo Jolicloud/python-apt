@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  python-apt 0.7.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-08-21 15:34+0200\n"
+"POT-Creation-Date: 2009-07-19 15:59+0200\n"
 "PO-Revision-Date: 2007-06-25 12:12+0100\n"
 "Last-Translator: Hugues NAULET <hnaulet@gmail.com>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
@@ -349,40 +349,40 @@ msgstr "Serveur principal"
 msgid "Custom servers"
 msgstr "Serveurs personnalisés"
 
-#: ../apt/progress/gtk2.py:246
+#: ../apt/progress/gtk2.py:259
 #, python-format
 msgid "Downloading file %(current)li of %(total)li with %(speed)s/s"
 msgstr "Téléchargement du fichier %(current)li sur %(total)li à %(speed)s/s"
 
-#: ../apt/progress/gtk2.py:252
+#: ../apt/progress/gtk2.py:265
 #, python-format
 msgid "Downloading file %(current)li of %(total)li"
 msgstr "Téléchargement du fichier %(current)li sur %(total)li"
 
 #. Setup some child widgets
-#: ../apt/progress/gtk2.py:272
+#: ../apt/progress/gtk2.py:285
 msgid "Details"
 msgstr "Détails"
 
-#: ../apt/progress/gtk2.py:354
+#: ../apt/progress/gtk2.py:367
 #, fuzzy
 msgid "Starting..."
 msgstr "Paramètres"
 
-#: ../apt/progress/gtk2.py:360
+#: ../apt/progress/gtk2.py:373
 msgid "Complete"
 msgstr ""
 
-#: ../apt/package.py:315
+#: ../apt/package.py:301
 #, python-format
 msgid "Invalid unicode in description for '%s' (%s). Please report."
 msgstr ""
 
-#: ../apt/package.py:878 ../apt/package.py:982
+#: ../apt/package.py:937 ../apt/package.py:1043
 msgid "The list of changes is not available"
 msgstr "La liste des modifications n'est pas disponible"
 
-#: ../apt/package.py:986
+#: ../apt/package.py:1047
 #, python-format
 msgid ""
 "The list of changes is not available yet.\n"
@@ -391,7 +391,7 @@ msgid ""
 "until the changes become available or try again later."
 msgstr ""
 
-#: ../apt/package.py:992
+#: ../apt/package.py:1053
 msgid ""
 "Failed to download the list of changes. \n"
 "Please check your Internet connection."
@@ -406,7 +406,7 @@ msgstr ""
 
 #: ../apt/debfile.py:81
 #, python-format
-msgid "List of files for '%s' could not be read"
+msgid "List of files for '%s'could not be read"
 msgstr ""
 
 #: ../apt/debfile.py:149
@@ -447,3 +447,54 @@ msgstr ""
 #, fuzzy
 msgid "An essential package would be removed"
 msgstr "Un paquet essentiel devrait être enlevé"
+
+#: ../apt/progress/text.py:81
+#, python-format
+msgid "%c%s... Done"
+msgstr ""
+
+#: ../apt/progress/text.py:118
+msgid "Hit "
+msgstr ""
+
+#: ../apt/progress/text.py:126
+msgid "Ign "
+msgstr ""
+
+#: ../apt/progress/text.py:128
+msgid "Err "
+msgstr ""
+
+#: ../apt/progress/text.py:138
+msgid "Get:"
+msgstr ""
+
+#: ../apt/progress/text.py:198
+msgid " [Working]"
+msgstr ""
+
+#: ../apt/progress/text.py:208
+#, python-format
+msgid ""
+"Media change: please insert the disc labeled\n"
+" '%s'\n"
+"in the drive '%s' and press enter\n"
+msgstr ""
+
+#. Trick for getting a translation from apt
+#: ../apt/progress/text.py:216
+#, python-format
+msgid "Fetched %sB in %s (%sB/s)\n"
+msgstr ""
+
+#: ../apt/progress/text.py:229
+msgid "Please provide a name for this Disc, such as 'Debian 2.1r1 Disk 1'"
+msgstr ""
+
+#: ../apt/progress/text.py:241
+msgid "Please insert a Disc in the drive and press enter"
+msgstr ""
+
+#: ../apt/cache.py:96
+msgid "Building data structures"
+msgstr ""

@@ -9,7 +9,7 @@ from progress import TextProgress
 apt_pkg.init()
 
 progress = TextProgress()
-cache = apt_pkg.GetCache(progress)
+cache = apt_pkg.Cache(progress)
 print "Available packages: %s " % cache.PackageCount
 
 iter = cache["base-config"]
@@ -17,7 +17,7 @@ print "example package iter: %s" % iter
 
 # get depcache
 print "\n\n depcache"
-depcache = apt_pkg.GetDepCache(cache)
+depcache = apt_pkg.DepCache(cache)
 depcache.ReadPinFile()
 # init is needed after the creation/pin file reading
 depcache.Init(progress)
