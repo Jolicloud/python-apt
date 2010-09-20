@@ -1,3 +1,10 @@
+python-apt (0.7.94.3jolicloud1+l6.2) robby-lucid; urgency=low
+
+  * Added a way to select upstream or current lsb_release used by
+    get_distro()
+
+ -- Adam McDaniel <adam@jolicloud.org>  Mon, 20 Sep 2010 15:50:05 -0600
+
 python-apt (0.7.94.2ubuntu6.2) lucid-proposed; urgency=low
 
   * apt/utils.py:
