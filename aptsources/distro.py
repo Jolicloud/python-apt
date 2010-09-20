@@ -438,15 +438,18 @@ class UbuntuDistribution(Distribution):
             self, mirror_template="http://%s.archive.ubuntu.com/ubuntu/")
 
 
-def _lsb_release():
+def _lsb_release(upstream=False):
     """Call lsb_release --idrc and return a mapping."""
     from subprocess import Popen, PIPE
     import errno
     result = {'Codename': 'sid', 'Distributor ID': 'Debian',
               'Description': 'Debian GNU/Linux unstable (sid)',
               'Release': 'unstable'}
+    flags = '-idrc'
+    if upstream:
+        flags += 'u'
     try:
-        out = Popen(['lsb_release', '-idrc'], stdout=PIPE).communicate()[0]
+        out = Popen(['lsb_release', flags], stdout=PIPE).communicate()[0]
         # Convert to unicode string, needed for Python 3.1
         out = out.decode("utf-8")
         result.update(l.split(":\t") for l in out.split("\n") if ':\t' in l)
@@ -456,7 +459,7 @@ def _lsb_release():
     return result
 
 
-def get_distro(id=None, codename=None, description=None, release=None):
+def get_distro(id=None, codename=None, description=None, release=None, upstream=False):
     """
     Check the currently used distribution and return the corresponding
     distriubtion class that supports distro specific features.
@@ -466,7 +469,7 @@ def get_distro(id=None, codename=None, description=None, release=None):
     """
     # make testing easier
     if not (id and codename and description and release):
-        result = _lsb_release()
+        result = _lsb_release(upstream)
         id = result['Distributor ID']
         codename = result['Codename']
         description = result['Description']

@@ -19,7 +19,7 @@ Vcs-Browser: http://bazaar.launchpad.net/~ubuntu-core-dev/python-apt/lucid/files
 
 Package: python-apt
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, lsb-release
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, lsb-release (>= 4.0-1jolicloud1)
 Recommends: iso-codes
 Breaks: debdelta (<< 0.28~), packagekit-backend-apt (<= 0.4.8-0ubuntu4)
 Provides: ${python:Provides}
