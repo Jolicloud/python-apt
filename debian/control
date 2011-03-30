@@ -14,8 +14,10 @@ Build-Depends: apt-utils,
                python-central (>= 0.5),
                python-distutils-extra (>= 2.0),
                python-sphinx (>= 0.5)
-Vcs-Bzr: https://code.launchpad.net/~ubuntu-core-dev/python-apt/lucid
-Vcs-Browser: http://bazaar.launchpad.net/~ubuntu-core-dev/python-apt/lucid/files
+XS-Ubuntu-Vcs-Bzr: https://code.launchpad.net/~ubuntu-core-dev/python-apt/lucid
+XS-Ubuntu-Vcs-Browser: http://bazaar.launchpad.net/~ubuntu-core-dev/python-apt/lucid/files
+Vcs-Git: git://github.com/jolicloud/python-apt.git
+Vcs-Browser: https://github.com/jolicloud/python-apt
 
 Package: python-apt
 Architecture: any
